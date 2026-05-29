@@ -1,0 +1,1343 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>إدارة المدرسة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0d14;--bg2:#12151f;--bg3:#181c29;--bg4:#1e2333;--bg5:#252b3d;
+  --border:#2a3147;--border2:#354060;
+  --text:#e4e8f4;--text2:#8892b0;--text3:#5a6480;
+  --accent:#e8a020;--accent2:#d4900e;--accent3:#fbbe50;
+  --green:#2dd4a0;--green2:#1aaa7e;--red:#f05060;--blue:#4d9ef5;--purple:#9b7cf8;
+  --r:10px;--shadow:0 4px 24px rgba(0,0,0,.45);--shadow2:0 8px 40px rgba(0,0,0,.6);
+}
+[data-theme="light"]{
+  --bg:#f5f6fa;--bg2:#ffffff;--bg3:#eef0f5;--bg4:#e4e7ef;--bg5:#d9dde8;
+  --border:#d0d5e2;--border2:#b8bfd0;
+  --text:#1a1d2e;--text2:#505570;--text3:#787d96;
+  --accent:#d4900e;--accent2:#c0800a;--accent3:#e8a020;
+  --green:#16a34a;--green2:#15803d;--red:#dc2626;--blue:#2563eb;--purple:#7c3aed;
+  --shadow:0 4px 24px rgba(0,0,0,.08);--shadow2:0 8px 40px rgba(0,0,0,.12);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:"DM Sans",system-ui,sans-serif;font-size:16px;line-height:1.6;overflow:hidden}
+html{direction:rtl}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.app{display:flex;height:100vh;width:100vw}
+/* SIDEBAR */
+.sidebar{width:218px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden}
+.sb-brand{padding:1rem 1.1rem .8rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.65rem}
+.sb-logo{width:30px;height:30px;border-radius:7px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Syne",sans-serif;font-weight:800;font-size:.7rem;color:#000;flex-shrink:0}
+.sb-name{font-family:"Syne",sans-serif;font-weight:700;font-size:.84rem;color:var(--text);letter-spacing:.04em}
+.sb-name span{display:block;font-size:.58rem;font-weight:400;color:var(--text3);
+  letter-spacing:.06em;text-transform:uppercase;margin-top:.05rem}
+.sb-nav{flex:1;padding:.4rem .55rem;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.48rem .7rem;border-radius:7px;
+  cursor:pointer;color:var(--text2);font-size:.79rem;font-weight:500;transition:all .13s;
+  position:relative;user-select:none;border:none;background:none;width:100%;
+  text-align:left;font-family:inherit}
+.nav-item:hover{background:var(--bg4);color:var(--text)}
+.nav-item.active{background:rgba(232,160,32,.1);color:var(--accent);font-weight:600}
+.ni-icon{font-size:.85rem;width:17px;text-align:center;flex-shrink:0}
+.ni-badge{margin-right:auto;background:var(--red);color:#fff;font-size:.57rem;
+  font-weight:800;padding:.06rem .35rem;border-radius:8px;min-width:17px;text-align:center;line-height:1.4}
+.sb-footer{padding:.7rem .9rem;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:.55rem}
+.sb-avatar{width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.74rem;color:#000;flex-shrink:0}
+.sb-uname{font-size:.75rem;font-weight:600;line-height:1.2}
+.sb-urole{font-size:.62rem;color:var(--text3)}
+.sb-btns{display:flex;gap:.35rem;margin-top:.45rem}
+.sb-btn{flex:1;background:none;border:1px solid var(--border);color:var(--text3);
+  border-radius:5px;padding:.26rem;font-size:.68rem;cursor:pointer;font-family:inherit;transition:.13s}
+.sb-btn:hover{border-color:var(--border2);color:var(--text2)}
+.sb-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.sb-credit{font-size:.57rem;color:var(--accent);text-align:center;padding:.5rem .6rem .3rem;border-top:1px solid var(--border);margin-top:.35rem;font-weight:600;letter-spacing:.03em;opacity:.85}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 1.4rem;flex-shrink:0;gap:.8rem}
+.topbar-left{min-width:0}
+.topbar-title{font-family:"Syne",sans-serif;font-size:.95rem;font-weight:700;color:var(--text)}
+.topbar-sub{font-size:.68rem;color:var(--text3);margin-top:.03rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:1.3rem}
+/* BUTTONS */
+.btn{border:none;border-radius:7px;padding:.44rem .95rem;font-weight:600;font-size:.77rem;
+  cursor:pointer;font-family:inherit;transition:all .13s;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:.3rem}
+.btn-p{background:var(--accent);color:#000}.btn-p:hover{background:var(--accent3)}
+.btn-s{background:var(--bg4);color:var(--text);border:1px solid var(--border)}.btn-s:hover{background:var(--bg5)}
+.btn-g{background:rgba(45,212,160,.1);color:var(--green);border:1px solid rgba(45,212,160,.22)}.btn-g:hover{background:rgba(45,212,160,.18)}
+.btn-r{background:rgba(240,80,96,.1);color:var(--red);border:1px solid rgba(240,80,96,.22)}.btn-r:hover{background:rgba(240,80,96,.18)}
+.btn-b{background:rgba(77,158,245,.1);color:var(--blue);border:1px solid rgba(77,158,245,.22)}.btn-b:hover{background:rgba(77,158,245,.18)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.95rem 1.1rem}
+.stat-val{font-family:"Syne",sans-serif;font-size:1.45rem;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:.18rem}
+.stat-label{font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600}
+.stat-sub{font-size:.68rem;color:var(--text3);margin-top:.18rem}
+.stat-card.green{border-top:2px solid var(--green)}.stat-card.amber{border-top:2px solid var(--accent)}
+.stat-card.blue{border-top:2px solid var(--blue)}.stat-card.purple{border-top:2px solid var(--purple)}
+.stat-card.red{border-top:2px solid var(--red)}
+.stats-row{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.stats-row .stat-card{flex:1;min-width:130px}
+/* TABLE */
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.2rem;
+  cursor:pointer;padding:.2rem;flex-shrink:0;line-height:1}
+.sb-overlay{display:none}
+.tbl-wrap{border:1px solid var(--border);border-radius:var(--r);overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:.76rem}
+.tbl thead{background:var(--bg3)}
+.tbl th{padding:.55rem .8rem;text-align:right;color:var(--text3);font-size:.61rem;
+  font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:.55rem .8rem;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.tbl tbody tr{background:var(--bg2);transition:background .1s}
+.tbl tbody tr:hover{background:var(--bg3)}
+.tbl tbody tr:last-child td{border-bottom:none}
+/* PILLS / BADGES */
+.pill{display:inline-flex;align-items:center;padding:.16rem .55rem;border-radius:20px;font-size:.63rem;font-weight:700;white-space:nowrap}
+.pill-green{background:rgba(45,212,160,.12);color:var(--green)}
+.pill-amber{background:rgba(232,160,32,.12);color:var(--accent)}
+.pill-red{background:rgba(240,80,96,.12);color:var(--red)}
+.pill-blue{background:rgba(77,158,245,.12);color:var(--blue)}
+.pill-purple{background:rgba(155,124,248,.12);color:var(--purple)}
+.pill-gray{background:rgba(90,100,128,.14);color:var(--text3)}
+.hotel-badge{display:inline-block;padding:.13rem .5rem;border-radius:4px;font-size:.65rem;
+  font-weight:700;background:rgba(77,158,245,.1);color:var(--blue);white-space:nowrap}
+.canal-badge{display:inline-block;padding:.13rem .48rem;border-radius:4px;font-size:.63rem;font-weight:700}
+.canal-whatsapp,.canal-zpro{background:rgba(45,212,160,.1);color:var(--green)}
+.canal-telefone,.canal-voip{background:rgba(155,124,248,.1);color:var(--purple)}
+.canal-email{background:rgba(232,160,32,.1);color:var(--accent)}
+.canal-site,.canal-booking,.canal-agencias,.canal-outro{background:rgba(90,100,128,.12);color:var(--text2)}
+.st-pendente{background:rgba(232,160,32,.12);color:var(--accent)}
+.st-confirmada,.st-confirmada-pelo-gestor{background:rgba(45,212,160,.12);color:var(--green)}
+.st-cancelada,.st-cancelada-pelo-gestor{background:rgba(240,80,96,.12);color:var(--red)}
+.st-lead-frio{background:rgba(90,100,128,.14);color:var(--text3)}
+.st-comprovante-enviado{background:rgba(77,158,245,.12);color:var(--blue)}
+.proto{font-family:"Courier New",monospace;font-size:.65rem;
+  background:rgba(77,158,245,.1);color:var(--blue);padding:.08rem .38rem;border-radius:3px}
+.desb{font-family:"Courier New",monospace;font-size:.65rem;
+  background:rgba(155,124,248,.1);color:var(--purple);padding:.08rem .38rem;border-radius:3px}
+.row-atrasado{border-right:2px solid var(--accent)!important}
+/* FORM */
+.fg{margin-bottom:.62rem}
+.fg label{display:block;font-size:.62rem;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:.22rem}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--bg3);border:1px solid var(--border);
+  color:var(--text);border-radius:6px;padding:.4rem .65rem;font-size:.8rem;font-family:inherit;transition:.13s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(232,160,32,.08)}
+.fg textarea{resize:vertical;min-height:48px}
+.fg-2{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+.fg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+.req{color:var(--accent);margin-right:.12rem}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.chip{padding:.25rem .65rem;border-radius:18px;font-size:.7rem;font-weight:600;cursor:pointer;
+  border:1px solid var(--border);color:var(--text2);background:var(--bg3);transition:.11s;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.sel{background:rgba(232,160,32,.11);border-color:var(--accent);color:var(--accent)}
+.chips-err .chip{border-color:var(--red)!important;animation:shake .3s}
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;
+  padding:.52rem .78rem;background:var(--bg3);border-radius:7px;margin-bottom:.38rem}
+.toggle-info{font-size:.8rem;font-weight:500}
+.toggle-info small{display:block;font-size:.66rem;color:var(--text3);margin-top:.08rem}
+.toggle{width:36px;height:20px;background:var(--bg5);border-radius:10px;
+  position:relative;cursor:pointer;border:1px solid var(--border);transition:.18s}
+.toggle-knob{width:14px;height:14px;background:var(--text3);border-radius:50%;
+  position:absolute;top:2px;left:2px;transition:.18s}
+.toggle.on{background:rgba(45,212,160,.14);border-color:var(--green)}
+.toggle.on .toggle-knob{left:18px;background:var(--green)}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:1rem;
+  backdrop-filter:blur(5px);animation:fadeIn .14s}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:13px;
+  box-shadow:var(--shadow2);width:min(640px,100%);max-height:90vh;overflow-y:auto}
+.modal-sm{width:min(400px,100%)}.modal-lg{width:min(760px,100%)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 1.3rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-head h2{font-family:"Syne",sans-serif;font-size:.92rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text3);font-size:.95rem;
+  cursor:pointer;padding:.18rem .38rem;border-radius:4px;transition:.13s}
+.modal-close:hover{color:var(--text);background:var(--bg4)}
+.modal-body{padding:1.1rem 1.3rem}
+.modal-footer{display:flex;justify-content:flex-end;gap:.55rem;
+  padding:.85rem 1.3rem;border-top:1px solid var(--border)}
+.modal-div{border:none;border-top:1px solid var(--border);margin:.85rem 0}
+/* TABS */
+.tabs-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;gap:0}
+.tab-btn{padding:.46rem .95rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--text3);border-bottom:2px solid transparent;transition:.13s;
+  background:none;border-top:none;border-left:none;border-right:none;
+  font-family:inherit;text-transform:uppercase;letter-spacing:.05em}
+.tab-btn:hover{color:var(--text2)}.tab-btn.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-pane{display:none}.tab-pane.on{display:block}
+.subtabs{display:flex;gap:.38rem;margin-bottom:.9rem;flex-wrap:wrap}
+.stab{padding:.32rem .82rem;font-size:.7rem;font-weight:700;cursor:pointer;
+  color:var(--text2);border-radius:18px;border:1px solid var(--border);background:var(--bg3);
+  font-family:inherit;transition:.13s}
+.stab:hover{border-color:var(--border2)}.stab.on{background:rgba(232,160,32,.1);border-color:var(--accent);color:var(--accent)}
+/* FILTERS */
+.filters{display:flex;gap:.55rem;flex-wrap:wrap;margin-bottom:.9rem;align-items:flex-end}
+.fg-f{display:flex;flex-direction:column;gap:.18rem}
+.fg-f label{font-size:.6rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.fg-f input,.fg-f select{background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:.36rem .62rem;font-size:.76rem;font-family:inherit}
+.fg-f input:focus,.fg-f select:focus{outline:none;border-color:var(--accent)}
+.fg-f.grow{flex:1;min-width:150px}
+/* LOADING */
+.loading-pg{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:.9rem;background:var(--bg)}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+.spinner-lg{width:30px;height:30px;border-width:3px}
+/* PROGRESS */
+.prog-track{height:6px;background:var(--bg5);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+.prog-g{background:var(--green)}.prog-a{background:var(--accent)}.prog-p{background:var(--purple)}
+/* MSGS */
+.fmsg{font-size:.73rem;padding:.38rem .65rem;border-radius:5px;margin-top:.38rem}
+.fmsg-ok{background:rgba(45,212,160,.1);color:var(--green);border:1px solid rgba(45,212,160,.2)}
+.fmsg-err{background:rgba(240,80,96,.1);color:var(--red);border:1px solid rgba(240,80,96,.2)}
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 25% 40%,rgba(232,160,32,.07),transparent 55%),
+             radial-gradient(ellipse at 80% 80%,rgba(77,158,245,.05),transparent 50%),var(--bg)}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:2.3rem;width:min(370px,92%);box-shadow:var(--shadow2)}
+.login-brand{display:flex;align-items:center;gap:.75rem;margin-bottom:.35rem}
+.login-logo{width:40px;height:40px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Syne",sans-serif;font-weight:800;font-size:.85rem;color:#000}
+.login-name{font-family:"Syne",sans-serif;font-weight:800;font-size:1.35rem;letter-spacing:.04em}
+.login-sub{font-size:.75rem;color:var(--text3);margin-bottom:1.8rem}
+/* META CARDS */
+.meta-tier{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;flex:1;min-width:150px}
+.meta-tier.g{border-top:3px solid var(--green)}.meta-tier.a{border-top:3px solid var(--accent)}.meta-tier.p{border-top:3px solid var(--purple)}
+.mt-label{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem}
+.mt-val{font-family:"Syne",sans-serif;font-size:1.15rem;font-weight:800}
+.mt-pct{font-size:.69rem;color:var(--text3);margin-top:.18rem}
+.op-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.op-head{display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem}
+.op-av{width:34px;height:34px;border-radius:50%;background:var(--bg4);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.op-nome{font-weight:700;font-size:.84rem}.op-res{font-size:.67rem;color:var(--text3)}
+.op-val{font-family:"Syne",sans-serif;font-size:1.25rem;font-weight:800;margin-bottom:.75rem}
+.op-bars{display:flex;flex-direction:column;gap:.45rem}
+.op-bar-row{display:flex;align-items:center;gap:.55rem}
+.op-bar-lbl{font-size:.63rem;color:var(--text3);width:50px;text-align:right;flex-shrink:0}
+.op-bar-track{flex:1;height:5px;background:var(--bg5);border-radius:3px;overflow:hidden}
+.op-bar-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.op-premiacao{margin-top:.85rem;background:var(--bg3);border-radius:6px;padding:.5rem .75rem;font-size:.73rem}
+/* HORÁRIO */
+.hora-grid{display:flex;align-items:flex-end;gap:2px;height:72px;overflow-x:auto;padding-bottom:4px}
+.hora-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;width:19px}
+.hora-bar-wrap{display:flex;align-items:flex-end;height:52px}
+.hora-bar{width:11px;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px;opacity:.8}
+.hora-lbl{font-size:.53rem;color:var(--text3)}
+.hora-cnt{font-size:.56rem;color:var(--accent);font-weight:700}
+.dia-grid{display:flex;align-items:flex-end;gap:4px}
+.dia-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.dia-bar-wrap{display:flex;align-items:flex-end;height:65px;width:100%}
+.dia-bar{width:100%;background:var(--blue);border-radius:3px 3px 0 0;min-height:2px;opacity:.8}
+.dia-lbl{font-size:.63rem;color:var(--text2);font-weight:600}
+.dia-cnt{font-size:.63rem;color:var(--blue);font-weight:700}
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:1.6rem;
+  text-align:center;cursor:pointer;transition:.14s;background:var(--bg3)}
+.upload-zone:hover{border-color:var(--accent);background:rgba(232,160,32,.04)}
+.upload-zone input[type=file]{display:none}
+/* ROADMAP */
+.rm-col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.rm-col-hdr{padding:.6rem .95rem;font-size:.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+.rm-col-hdr.em-breve{background:rgba(45,212,160,.08);color:var(--green)}
+.rm-col-hdr.planejado{background:rgba(77,158,245,.08);color:var(--blue)}
+.rm-col-hdr.ideias{background:rgba(155,124,248,.08);color:var(--purple)}
+.rm-col-hdr.bugs{background:rgba(240,80,96,.08);color:var(--red)}
+.rm-items{padding:.65rem;display:flex;flex-direction:column;gap:.45rem}
+.rm-item{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:.65rem .85rem}
+.rm-item-t{font-weight:700;font-size:.77rem;margin-bottom:.22rem}
+.rm-item-d{font-size:.68rem;color:var(--text3);line-height:1.5}
+.rm-item-m{font-size:.62rem;color:var(--text3);margin-top:.28rem}
+/* SEC TITLE */
+.sec-t{font-size:.61rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--accent);margin:.9rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)}
+.sec-t:first-child{margin-top:0}
+/* ANIMATIONS */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media(max-width:768px){
+  .hamburger{display:block}
+  .sidebar{position:fixed;top:0;right:-240px;z-index:900;height:100vh;width:218px;
+    transition:left .22s ease;display:flex;box-shadow:var(--shadow2)}
+  .sidebar.open{right:0}
+  .sb-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;
+    pointer-events:none;transition:opacity .22s}
+  .sb-overlay.show{opacity:1;pointer-events:auto}
+  .content{padding:.8rem}
+  .fg-2,.fg-3{grid-template-columns:1fr}
+  .stats-row{flex-direction:column}
+  .stats-row .stat-card{min-width:0}
+  .topbar{padding:0 .8rem;gap:.4rem}
+  .topbar-title{font-size:.85rem}
+  .topbar-actions{gap:.3rem}
+  .topbar-actions .btn{font-size:.7rem;padding:.3rem .6rem}
+  .modal-body,.modal-head,.modal-footer{padding-left:.9rem;padding-right:.9rem}
+  .login-card{padding:1.5rem}
+  .login-name{font-size:1.15rem}
+  [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="loading-pg">
+    <div class="spinner spinner-lg"></div>
+    <div style="color:var(--text3);font-size:.79rem">نظام إدارة المدرسة</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  SCHOOL MANAGEMENT SYSTEM
+// ══════════════════════════════════════
+
+// ── HELPERS ──
+const gv=id=>(document.getElementById(id)?.value||"").trim();
+const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||""};
+const hoje=()=>new Date().toISOString().slice(0,10);
+const genId=()=>"ID"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const R$=v=>"$ "+(parseFloat(v)||0).toLocaleString("en-US",{minimumFractionDigits:2});
+const isoDate=raw=>{if(!raw)return"—";try{return new Date(raw).toLocaleDateString("en-US")}catch{return raw}};
+const hojeLocal=()=>{const d=new Date();return d.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})};
+const gradeColor=g=>g>=7?"var(--green)":g>=5?"var(--accent)":"var(--red)";
+const gradePill=g=>g>=7?"pill-green":g>=5?"pill-amber":"pill-red";
+const gradeLabel=g=>g>=7?"ممتاز":g>=5?"جيد":"بحاجة تحسين";
+const attPill=s=>s==="حاضر"?"pill-green":s==="متأخر"?"pill-amber":"pill-red";
+
+// ── MODAL ──
+function showModal(html,cls=""){
+  const o=document.createElement("div");o.className="modal-overlay";o.id="mo";
+  o.innerHTML=`<div class="modal ${cls}">${html}</div>`;
+  document.body.appendChild(o);o.onclick=e=>{if(e.target===o)closeModal()};return o;
+}
+function closeModal(){document.getElementById("mo")?.remove()}
+function showMsg(id,txt,t="ok"){const e=document.getElementById(id);if(!e)return;e.textContent=txt;e.className=`fmsg fmsg-${t}`;e.style.display="block"}
+
+// ── DATA ──
+let _data=null;
+const STORAGE_KEY="school_mgt_data";
+
+function loadData(){
+  const saved=localStorage.getItem(STORAGE_KEY);
+  if(saved){_data=JSON.parse(saved);if(!_data.users.find(u=>u.email==="Admin@gmail.com"))_data.users.push({id:"USR04",email:"Admin@gmail.com",password:"123456",nome:"Admin",role:"admin",avatar:"A"});if(_data.subjects&&_data.subjects[0]&&_data.subjects[0].name==="Mathematics"){const subMap={Mathematics:"الرياضيات",Arabic:"اللغة العربية",English:"اللغة الإنجليزية",Science:"العلوم",Physics:"الفيزياء",French:"اللغة الفرنسية","Computer Science":"علوم الحاسوب","Islamic Studies":"التربية الإسلامية","History & Geography":"التاريخ والجغرافيا"};_data.subjects.forEach(s=>{if(subMap[s.name])s.name=subMap[s.name];});}if(_data.classes&&_data.classes[0]&&_data.classes[0].name==="7th Grade"){const clsMap={"7th Grade":"الصف السابع","8th Grade":"الصف الثامن","9th Grade":"الصف التاسع"};_data.classes.forEach(c=>{if(clsMap[c.name])c.name=clsMap[c.name];});}saveData();return _data;}
+  _data={
+    students:[
+      {id:"STU001",firstName:"Ahmed",lastName:"Benali",dob:"2008-05-12",gender:"M",email:"ahmed@school.com",phone:"0555123456",address:"15 Rue Didouche Mourad",classId:"CLS01",parentName:"Karim Benali",parentPhone:"0666123456",status:"active",enrollDate:"2024-09-01"},
+      {id:"STU002",firstName:"Fatima",lastName:"Zohra",dob:"2009-03-22",gender:"F",email:"fatima@school.com",phone:"0555987654",address:"8 Rue Larbi Ben M'hidi",classId:"CLS02",parentName:"Said Zohra",parentPhone:"0666987654",status:"active",enrollDate:"2024-09-01"},
+      {id:"STU003",firstName:"Mohamed",lastName:"Slimani",dob:"2007-11-08",gender:"M",email:"mohamed@school.com",phone:"0555112233",address:"22 Ave des Frères",classId:"CLS01",parentName:"Ali Slimani",parentPhone:"0666112233",status:"active",enrollDate:"2023-09-01"},
+      {id:"STU004",firstName:"Sara",lastName:"Mansouri",dob:"2009-07-15",gender:"F",email:"sara@school.com",phone:"0555443322",address:"3 Rue Khemisti",classId:"CLS03",parentName:"Nadia Mansouri",parentPhone:"0666443322",status:"active",enrollDate:"2024-09-01"},
+      {id:"STU005",firstName:"Youssef",lastName:"Bouaziz",dob:"2008-01-30",gender:"M",email:"youssef@school.com",phone:"0555778899",address:"12 Rue Emir Abdelkader",classId:"CLS02",parentName:"Hassan Bouaziz",parentPhone:"0666778899",status:"active",enrollDate:"2024-09-01"},
+      {id:"STU006",firstName:"Leila",lastName:"Hadj",dob:"2010-09-18",gender:"F",email:"leila@school.com",phone:"0555665544",address:"7 Rue de la Liberté",classId:"CLS03",parentName:"Mounir Hadj",parentPhone:"0666665544",status:"active",enrollDate:"2024-09-01"},
+      {id:"STU007",firstName:"Omar",lastName:"Bensaid",dob:"2007-06-05",gender:"M",email:"omar@school.com",phone:"0555223344",address:"19 Rue Colonel Amirouche",classId:"CLS01",parentName:"Farida Bensaid",parentPhone:"0666223344",status:"active",enrollDate:"2023-09-01"},
+      {id:"STU008",firstName:"Nora",lastName:"Cherif",dob:"2009-12-25",gender:"F",email:"nora@school.com",phone:"0555889900",address:"5 Rue des Oliviers",classId:"CLS02",parentName:"Reda Cherif",parentPhone:"0666889900",status:"active",enrollDate:"2024-09-01"},
+    ],
+    teachers:[
+      {id:"TCH01",firstName:"Khadija",lastName:"Makhlouf",dob:"1985-04-10",gender:"F",email:"khadija@school.com",phone:"0666123123",address:"12 Rue Didouche",subjects:["الرياضيات","الفيزياء"],classIds:["CLS01","CLS02"],qualification:"دكتوراه في الرياضيات",hireDate:"2020-09-01",status:"active"},
+      {id:"TCH02",firstName:"Redouane",lastName:"Amrani",dob:"1980-11-22",gender:"M",email:"redouane@school.com",phone:"0666456789",address:"8 Rue Larbi Tebessi",subjects:["اللغة العربية","التربية الإسلامية"],classIds:["CLS01","CLS03"],qualification:"ماجستير الأدب العربي",hireDate:"2019-09-01",status:"active"},
+      {id:"TCH03",firstName:"Samira",lastName:"Belaid",dob:"1990-02-14",gender:"F",email:"samira@school.com",phone:"0666789456",address:"22 Ave Benbadis",subjects:["اللغة الإنجليزية","اللغة الفرنسية"],classIds:["CLS02","CLS03"],qualification:"ماجستير اللغات",hireDate:"2021-09-01",status:"active"},
+      {id:"TCH04",firstName:"Karim",lastName:"Nouri",dob:"1982-07-08",gender:"M",email:"karim@school.com",phone:"0666345678",address:"3 Rue Emir Abdelkader",subjects:["العلوم","علوم الحاسوب"],classIds:["CLS01","CLS02","CLS03"],qualification:"دكتوراه في العلوم",hireDate:"2020-09-01",status:"active"},
+    ],
+    classes:[
+      {id:"CLS01",name:"الصف السابع",section:"A",room:"101",teacherId:"TCH01",capacity:30,students:3},
+      {id:"CLS02",name:"الصف الثامن",section:"B",room:"102",teacherId:"TCH02",capacity:30,students:3},
+      {id:"CLS03",name:"الصف التاسع",section:"A",room:"103",teacherId:"TCH03",capacity:25,students:2},
+    ],
+    subjects:[
+      {id:"SUB01",name:"الرياضيات",code:"ريض",teacherId:"TCH01",hours:5},
+      {id:"SUB02",name:"اللغة العربية",code:"عرب",teacherId:"TCH02",hours:4},
+      {id:"SUB03",name:"اللغة الإنجليزية",code:"إنج",teacherId:"TCH03",hours:3},
+      {id:"SUB04",name:"العلوم",code:"علوم",teacherId:"TCH04",hours:3},
+      {id:"SUB05",name:"الفيزياء",code:"فيز",teacherId:"TCH01",hours:2},
+      {id:"SUB06",name:"اللغة الفرنسية",code:"فرن",teacherId:"TCH03",hours:2},
+      {id:"SUB07",name:"علوم الحاسوب",code:"حاسوب",teacherId:"TCH04",hours:2},
+      {id:"SUB08",name:"التربية الإسلامية",code:"تربية إسلامية",teacherId:"TCH02",hours:2},
+      {id:"SUB09",name:"التاريخ والجغرافيا",code:"تاريخ وجغر",teacherId:"TCH02",hours:2},
+    ],
+    grades:[
+      {id:"GRD01",studentId:"STU001",subjectId:"SUB01",firstTerm:8.5,secondTerm:9,majorExam:9.5,comment:"طالب ممتاز"},
+      {id:"GRD02",studentId:"STU001",subjectId:"SUB02",firstTerm:7,secondTerm:7.5,majorExam:8,comment:""},
+      {id:"GRD03",studentId:"STU001",subjectId:"SUB03",firstTerm:6,secondTerm:6.5,majorExam:7,comment:"تقدم جيد"},
+      {id:"GRD04",studentId:"STU001",subjectId:"SUB04",firstTerm:9,secondTerm:8.5,majorExam:9,comment:"الأول في الفصل"},
+      {id:"GRD05",studentId:"STU002",subjectId:"SUB01",firstTerm:5,secondTerm:5.5,majorExam:6,comment:"بحاجة المزيد من التمارين"},
+      {id:"GRD06",studentId:"STU002",subjectId:"SUB03",firstTerm:7,secondTerm:7.5,majorExam:8,comment:"عمل جيد"},
+      {id:"GRD07",studentId:"STU003",subjectId:"SUB01",firstTerm:9,secondTerm:9.5,majorExam:10,comment:"متميز"},
+      {id:"GRD08",studentId:"STU003",subjectId:"SUB04",firstTerm:8,secondTerm:8.5,majorExam:9,comment:"جيد جدا"},
+      {id:"GRD09",studentId:"STU004",subjectId:"SUB03",firstTerm:6,secondTerm:6,majorExam:6.5,comment:""},
+      {id:"GRD10",studentId:"STU005",subjectId:"SUB02",firstTerm:7,secondTerm:7.5,majorExam:8,comment:"تحسن كبير"},
+      {id:"GRD11",studentId:"STU005",subjectId:"SUB04",firstTerm:5,secondTerm:5.5,majorExam:6,comment:"بحاجة تركيز"},
+      {id:"GRD12",studentId:"STU006",subjectId:"SUB01",firstTerm:6,secondTerm:6.5,majorExam:7,comment:""},
+      {id:"GRD13",studentId:"STU007",subjectId:"SUB02",firstTerm:8,secondTerm:8,majorExam:8.5,comment:"جيد"},
+      {id:"GRD14",studentId:"STU007",subjectId:"SUB03",firstTerm:9,secondTerm:9,majorExam:9.5,comment:"ممتاز"},
+    ],
+    attendance:[
+      {id:"ATT01",studentId:"STU001",date:"2026-05-04",status:"حاضر",teacherId:"TCH01"},
+      {id:"ATT02",studentId:"STU002",date:"2026-05-04",status:"Present",teacherId:"TCH01"},
+      {id:"ATT03",studentId:"STU003",date:"2026-05-04",status:"Late",teacherId:"TCH01"},
+      {id:"ATT04",studentId:"STU004",date:"2026-05-04",status:"Present",teacherId:"TCH01"},
+      {id:"ATT05",studentId:"STU005",date:"2026-05-04",status:"غائب",teacherId:"TCH01"},
+      {id:"ATT06",studentId:"STU001",date:"2026-05-05",status:"Present",teacherId:"TCH03"},
+      {id:"ATT07",studentId:"STU002",date:"2026-05-05",status:"Present",teacherId:"TCH03"},
+      {id:"ATT08",studentId:"STU003",date:"2026-05-05",status:"Present",teacherId:"TCH03"},
+      {id:"ATT09",studentId:"STU004",date:"2026-05-05",status:"Absent",teacherId:"TCH03"},
+      {id:"ATT10",studentId:"STU005",date:"2026-05-05",status:"Late",teacherId:"TCH03"},
+    ],
+    schedule:[
+      {id:"SCH01",classId:"CLS01",day:"Sunday",subjectId:"SUB01",teacherId:"TCH01",startTime:"08:00",endTime:"09:00",room:"101"},
+      {id:"SCH02",classId:"CLS01",day:"Sunday",subjectId:"SUB02",teacherId:"TCH02",startTime:"09:00",endTime:"10:00",room:"101"},
+      {id:"SCH03",classId:"CLS01",day:"Monday",subjectId:"SUB03",teacherId:"TCH03",startTime:"08:00",endTime:"09:00",room:"101"},
+      {id:"SCH04",classId:"CLS01",day:"Monday",subjectId:"SUB04",teacherId:"TCH04",startTime:"09:00",endTime:"10:00",room:"101"},
+      {id:"SCH05",classId:"CLS01",day:"Tuesday",subjectId:"SUB05",teacherId:"TCH01",startTime:"08:00",endTime:"09:00",room:"101"},
+      {id:"SCH06",classId:"CLS01",day:"Tuesday",subjectId:"SUB02",teacherId:"TCH02",startTime:"09:00",endTime:"10:00",room:"101"},
+      {id:"SCH07",classId:"CLS01",day:"Wednesday",subjectId:"SUB06",teacherId:"TCH03",startTime:"10:00",endTime:"11:00",room:"101"},
+      {id:"SCH08",classId:"CLS01",day:"Wednesday",subjectId:"SUB07",teacherId:"TCH04",startTime:"08:00",endTime:"09:00",room:"101"},
+      {id:"SCH09",classId:"CLS02",day:"Sunday",subjectId:"SUB01",teacherId:"TCH01",startTime:"10:00",endTime:"11:00",room:"102"},
+      {id:"SCH10",classId:"CLS02",day:"Sunday",subjectId:"SUB08",teacherId:"TCH02",startTime:"08:00",endTime:"09:00",room:"102"},
+      {id:"SCH11",classId:"CLS02",day:"Monday",subjectId:"SUB04",teacherId:"TCH04",startTime:"10:00",endTime:"11:00",room:"102"},
+      {id:"SCH12",classId:"CLS02",day:"Tuesday",subjectId:"SUB06",teacherId:"TCH03",startTime:"08:00",endTime:"09:00",room:"102"},
+      {id:"SCH13",classId:"CLS03",day:"Sunday",subjectId:"SUB04",teacherId:"TCH04",startTime:"08:00",endTime:"09:00",room:"103"},
+      {id:"SCH14",classId:"CLS03",day:"Monday",subjectId:"SUB02",teacherId:"TCH02",startTime:"10:00",endTime:"11:00",room:"103"},
+      {id:"SCH15",classId:"CLS03",day:"Tuesday",subjectId:"SUB03",teacherId:"TCH03",startTime:"09:00",endTime:"10:00",room:"103"},
+    ],
+    users:[
+      {id:"USR01",email:"admin@school.com",password:"admin123",nome:"Admin",role:"admin",avatar:"A"},
+      {id:"USR02",email:"teacher@school.com",password:"teacher123",nome:"Teacher",role:"teacher",avatar:"T"},
+      {id:"USR03",email:"student@school.com",password:"student123",nome:"Student",role:"student",avatar:"S"},
+      {id:"USR04",email:"Admin@gmail.com",password:"123456",nome:"Admin",role:"admin",avatar:"A"},
+    ],
+  };
+  saveData();return _data;
+}
+function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(_data))}
+
+// ── STATE ──
+let CU=null;let CR=null;let _curView="dashboard";
+const DIAS_SEMANA=["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"];
+
+// ── LOGIN ──
+function renderLogin(err){
+  document.getElementById("app").innerHTML=`
+  <div class="login-wrap"><div class="login-card">
+    <div class="login-brand"><div class="login-logo">JoB</div><div class="login-name">Sh-mgt</div></div>
+    <div class="login-sub">نظام إدارة المدرسة</div>
+    <div class="fg"><label>البريد الإلكتروني</label><input type="email" id="lE" placeholder="email@school.com" autocomplete="username"/></div>
+    <div class="fg"><label>كلمة المرور</label><input type="password" id="lS" placeholder="••••••••" autocomplete="current-password"/></div>
+    ${err?`<div class="fmsg fmsg-err">${err}</div>`:""}
+    <div id="lMsg" class="fmsg" style="display:none"></div>
+    <button class="btn btn-p" style="width:100%;margin-top:.7rem;padding:.55rem" id="btnL">تسجيل الدخول</button>
+    <hr style="border:none;border-top:1px solid var(--border);margin:.85rem 0">
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <button class="btn" style="padding:.55rem;font-size:.82rem;background:#ff8c42;color:#fff;border:none" onclick="quickLogin('admin')">👑 مدير</button>
+      <button class="btn btn-b" style="padding:.55rem;font-size:.82rem" onclick="quickLogin('teacher')">👨‍🏫 معلم</button>
+      <button class="btn btn-g" style="padding:.55rem;font-size:.82rem" onclick="quickLogin('student')">🎓 طالب</button>
+      <div style="text-align:center;font-size:.68rem;color:var(--accent);font-weight:600;margin-top:.5rem;opacity:.85">Coded By: Chaouchi Brahim</div>
+    </div>
+  </div></div>`;
+  const go=async()=>{
+    const e=gv("lE"),s=gv("lS");const btn=document.getElementById("btnL");
+    if(!e||!s){showMsg("lMsg","أدخل البريد الإلكتروني وكلمة المرور","err");return}
+    btn.disabled=true;btn.innerHTML=`<span class="spinner"></span> جاري تسجيل الدخول...`;
+    loadData();const u=_data.users.find(u=>u.email===e&&u.password===s);
+    if(u){localStorage.setItem("scl_user",JSON.stringify(u));location.reload();}
+    else{showMsg("lMsg","❌ بيانات الدخول غير صحيحة","err");btn.disabled=false;btn.innerHTML="تسجيل الدخول";}
+  };
+  document.getElementById("btnL").onclick=go;
+  document.getElementById("lS").onkeydown=e=>{if(e.key==="Enter")go()};
+  setTimeout(()=>document.getElementById("lE")?.focus(),100);
+}
+window.quickLogin=function(role){
+  const creds={admin:{email:"admin@school.com",pass:"admin123"},teacher:{email:"teacher@school.com",pass:"teacher123"},student:{email:"student@school.com",pass:"student123"}};
+  const c=creds[role];sv("lE",c.email);sv("lS",c.pass);document.getElementById("btnL")?.click();
+};
+
+// ── SHELL ──
+function renderShell(){
+  const u=CU;const nome=u.nome;const role=u.role;
+  const roleLabel={admin:"مدير",teacher:"معلم",student:"طالب"};
+  const isAdmin=role==="admin",isTeacher=role==="teacher",isStudent=role==="student";
+  const navItems=(()=>{
+    if(isAdmin)return[
+      {id:"dashboard",ic:"📊",lbl:"لوحة التحكم"},
+      {id:"students",ic:"👨‍🎓",lbl:"الطلاب"},
+      {id:"teachers",ic:"👨‍🏫",lbl:"المعلمين"},
+      {id:"classes",ic:"🏫",lbl:"الفصول"},
+      {id:"subjects",ic:"📚",lbl:"المواد"},
+      {id:"grades",ic:"📝",lbl:"الدرجات"},
+      {id:"attendance",ic:"✅",lbl:"الحضور"},
+      {id:"schedule",ic:"📅",lbl:"الجدول"},
+      {id:"users_view",ic:"👥",lbl:"المستخدمين"},
+    ];
+    if(isTeacher)return[
+      {id:"dashboard",ic:"📊",lbl:"لوحة التحكم"},
+      {id:"my_classes",ic:"🏫",lbl:"فصولي"},
+      {id:"my_students",ic:"👨‍🎓",lbl:"طلابي"},
+      {id:"grade_mgt",ic:"📝",lbl:"إدارة الدرجات"},
+      {id:"take_attendance",ic:"✅",lbl:"الحضور"},
+      {id:"my_schedule",ic:"📅",lbl:"جدولي"},
+    ];
+    return[
+      {id:"dashboard",ic:"📊",lbl:"لوحة التحكم"},
+      {id:"my_grades",ic:"📝",lbl:"درجاتي"},
+      {id:"my_schedule",ic:"📅",lbl:"جدولي"},
+      {id:"my_attendance",ic:"✅",lbl:"حضوري"},
+    ];
+  })();
+  document.getElementById("app").innerHTML=`
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sb-brand"><div class="sb-logo">SM</div>
+        <div class="sb-name">المدرسة<span>الإدارة</span></div></div>
+      <nav class="sb-nav" id="sbNav">
+        ${navItems.map(n=>`<button class="nav-item" data-view="${n.id}" onclick="sw('${n.id}')">
+          <span class="ni-icon">${n.ic}</span><span>${n.lbl}</span>
+        </button>`).join("")}
+      </nav>
+      <div class="sb-footer">
+        <div class="sb-user">
+          <div class="sb-avatar">${nome[0].toUpperCase()}</div>
+          <div><div class="sb-uname">${nome}</div><div class="sb-urole">${roleLabel[role]||role}</div></div>
+        </div>
+        <div class="sb-btns">
+          <button class="sb-btn danger" onclick="doLogout()">تسجيل الخروج</button>
+        </div>
+        <div class="sb-credit">Coded By: Chaouchi Brahim</div>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="topbar">
+        <button class="hamburger" id="hmbr" onclick="toggleSidebar()">☰</button>
+        <div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+        <div class="topbar-left">
+          <div class="topbar-title" id="ttl">لوحة التحكم</div>
+          <div class="topbar-sub" id="tsub">${hojeLocal()}</div>
+        </div>
+        <button class="btn btn-s" id="themeToggle" onclick="toggleTheme()" style="font-size:.75rem;padding:.3rem .6rem" title="تبديل السمة">🌙</button>
+        <div class="topbar-actions" id="tact"></div>
+      </div>
+      <div class="content" id="mc"></div>
+    </div>
+  </div>`;
+  sw("dashboard");
+}
+window.doLogout=function(){localStorage.removeItem("scl_user");CU=null;CR=null;location.reload()};
+window.toggleSidebar=function(){const s=document.querySelector(".sidebar");const o=document.getElementById("sbOverlay");if(!s)return;s.classList.toggle("open");if(o)o.classList.toggle("show")};
+window.closeSidebar=function(){const s=document.querySelector(".sidebar");const o=document.getElementById("sbOverlay");if(s)s.classList.remove("open");if(o)o.classList.remove("show")};
+
+window.sw=function(view){
+  _curView=view;
+  closeSidebar();
+  document.querySelectorAll(".nav-item").forEach(e=>e.classList.toggle("active",e.dataset.view===view));
+  const views={
+    dashboard:vDashboard,
+    students:vStudents,teachers:vTeachers,classes:vClasses,subjects:vSubjects,
+    grades:vGrades,attendance:vAttendance,schedule:vSchedule,users_view:vUsers,
+    my_classes:vMyClasses,my_students:vMyStudents,grade_mgt:vGradeMgt,
+    take_attendance:vTakeAttendance,my_schedule:vMySchedule,
+    my_grades:vMyGrades,my_attendance:vMyAttendance,
+  };
+  if(views[view])views[view]();
+};
+
+// ══════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════
+function vDashboard(){
+  loadData();const a=_data,u=a.users.find(x=>x.email===CU.email);
+  const isAdmin=u.role==="admin",isTeacher=u.role==="teacher",isStudent=u.role==="student";
+  document.getElementById("ttl").textContent="Dashboard";
+  document.getElementById("tact").innerHTML="";
+
+  if(isStudent){
+    const student=a.students.find(s=>s.email===CU.email)||a.students[0];
+    const myG=a.grades.filter(g=>g.studentId===student.id);
+    const avg=myG.length?myG.reduce((s,g)=>{const t=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return s+t},0)/myG.length:0;
+    const myAtt=a.attendance.filter(at=>at.studentId===student.id);
+    const pres=myAtt.filter(at=>at.status==="Present").length;
+    const late=myAtt.filter(at=>at.status==="Late").length;
+    const abs=myAtt.filter(at=>at.status==="Absent").length;
+    document.getElementById("tsub").textContent=student.firstName+" "+student.lastName+" · "+student.classId;
+    document.getElementById("mc").innerHTML=`
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-val">${myG.length}</div><div class="stat-label">المواد</div></div>
+      <div class="stat-card amber"><div class="stat-val">${avg.toFixed(1)}</div><div class="stat-label">المعدل</div></div>
+      <div class="stat-card blue"><div class="stat-val">${pres}</div><div class="stat-label">حاضر</div></div>
+      <div class="stat-card red"><div class="stat-val">${abs}</div><div class="stat-label">غائب</div></div>
+    </div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="sec-t">📊 My Grades</div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>المادة</th><th>الفصل الأول</th><th>الفصل الثاني</th><th>الامتحان</th><th>المعدل</th><th>الحالة</th></tr></thead>
+        <tbody>${myG.map(g=>{const sub=a.subjects.find(s=>s.id===g.subjectId);const avg2=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
+          <td><strong>${sub?sub.name:"—"}</strong></td>
+          <td>${g.firstTerm||"—"}</td><td>${g.secondTerm||"—"}</td><td>${g.majorExam||"—"}</td>
+          <td style="font-weight:600;color:${gradeColor(avg2)}">${avg2.toFixed(1)}</td>
+          <td><span class="pill ${gradePill(avg2)}">${gradeLabel(avg2)}</span></td>
+        </tr>`}).join("")}
+      </tbody></table></div>
+    </div>`;
+    return;
+  }
+
+  if(isTeacher){
+    const t=a.teachers.find(tc=>tc.email===CU.email)||a.teachers[0];
+    const myClasses=a.classes.filter(c=>t.classIds.includes(c.id));
+    const myStudents=a.students.filter(s=>t.classIds.includes(s.classId));
+    const myG=a.grades.filter(g=>myStudents.some(s=>s.id===g.studentId));
+    const myAtt=a.attendance.filter(at=>at.teacherId===t.id);
+    document.getElementById("tsub").textContent=t.firstName+" "+t.lastName+" · "+t.subjects.join(", ");
+    document.getElementById("mc").innerHTML=`
+    <div class="stats-row">
+      <div class="stat-card green"><div class="stat-val">${myClasses.length}</div><div class="stat-label">الفصول</div></div>
+      <div class="stat-card blue"><div class="stat-val">${myStudents.length}</div><div class="stat-label">الطلاب</div></div>
+      <div class="stat-card amber"><div class="stat-val">${myG.length}</div><div class="stat-label">الدرجات</div></div>
+      <div class="stat-card purple"><div class="stat-val">${myAtt.length}</div><div class="stat-label">الحضور</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-t">📋 My Classes</div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>الفصل</th><th>القاعة</th><th>الطلاب</th><th>المواد</th><th>الإجراءات</th></tr></thead>
+        <tbody>${myClasses.map(c=>`<tr>
+          <td><strong>${c.name} ${c.section}</strong></td>
+          <td>قاعة ${c.room}</td>
+          <td>${a.students.filter(s=>s.classId===c.id).length}</td>
+          <td>${t.subjects.join(", ")}</td>
+          <td><button class="btn btn-b" style="font-size:.68rem;padding:.2rem .5rem" onclick="sw('my_students')">View</button></td>
+        </tr>`).join("")}
+      </tbody></table></div>
+    </div>`;
+    return;
+  }
+
+  // Admin dashboard
+  document.getElementById("tsub").textContent=hojeLocal();
+  const totalStu=a.students.length,totalTch=a.teachers.length,totalCls=a.classes.length,totalSub=a.subjects.length;
+  const activeStu=a.students.filter(s=>s.status==="active").length;
+  const totalG=a.grades.length,totalAtt=a.attendance.length;
+  const avgAll=a.grades.length?a.grades.reduce((s,g)=>{const t=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return s+t},0)/a.grades.length:0;
+  const recentG=a.grades.slice(-5).reverse();
+  document.getElementById("mc").innerHTML=`
+  <div class="stats-row">
+    <div class="stat-card green"><div class="stat-val">${totalStu}</div><div class="stat-label">إجمالي الطلاب</div><div class="stat-sub">${activeStu} نشط</div></div>
+    <div class="stat-card blue"><div class="stat-val">${totalTch}</div><div class="stat-label">المعلمين</div></div>
+    <div class="stat-card amber"><div class="stat-val">${totalCls}</div><div class="stat-label">Classes</div></div>
+    <div class="stat-card purple"><div class="stat-val">${totalSub}</div><div class="stat-label">Subjects</div></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card green"><div class="stat-val">${totalG}</div><div class="stat-label">الدرجات المسجلة</div></div>
+    <div class="stat-card blue"><div class="stat-val">${totalAtt}</div><div class="stat-label">سجلات الحضور</div></div>
+    <div class="stat-card amber"><div class="stat-val">${avgAll.toFixed(1)}</div><div class="stat-label">المعدل العام</div></div>
+    <div class="stat-card purple"><div class="stat-val">${a.schedule.length}</div><div class="stat-label">الحصص المجدولة</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem">
+    <div class="card">
+      <div class="sec-t">📋 آخر الدرجات</div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>الطالب</th><th>Subject</th><th>المعدل</th><th>Status</th></tr></thead>
+        <tbody>${recentG.map(g=>{const stu=a.students.find(s=>s.id===g.studentId);const sub=a.subjects.find(s=>s.id===g.subjectId);const avg2=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
+          <td>${stu?stu.firstName+" "+stu.lastName:"—"}</td>
+          <td>${sub?sub.name:"—"}</td>
+          <td style="font-weight:600;color:${gradeColor(avg2)}">${avg2.toFixed(1)}</td>
+          <td><span class="pill ${gradePill(avg2)}">${gradeLabel(avg2)}</span></td>
+        </tr>`}).join("")}
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="sec-t">🏫 وصول سريع</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.5rem">
+        <button class="btn btn-p" onclick="sw('students')" style="padding:.6rem">👨‍🎓 Students</button>
+        <button class="btn btn-b" onclick="sw('teachers')" style="padding:.6rem">👨‍🏫 Teachers</button>
+        <button class="btn btn-g" onclick="sw('attendance')" style="padding:.6rem">✅ Attendance</button>
+        <button class="btn btn-s" onclick="sw('grades')" style="padding:.6rem">📝 Grades</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+//  STUDENTS (Admin)
+// ══════════════════════════════════════
+function vStudents(){
+  loadData();document.getElementById("ttl").textContent="إدارة الطلاب";
+  document.getElementById("tsub").textContent=_data.students.length+ " إجمالي الطلاب";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirStu()">+ Add Student</button>`;
+  renderStuTbl();
+}
+function renderStuTbl(){
+  const a=_data.students;const el=document.getElementById("mc");
+  el.innerHTML=`
+  <div class="filters">
+    <div class="fg-f grow"><label>بحث</label><input id="sSearch" placeholder="🔍 الاسم، البريد، الهاتف..." oninput="filtStu()"/></div>
+    <div class="fg-f"><label>الفصل</label><select id="sClass" onchange="filtStu()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div>
+    <div class="fg-f"><label>الحالة</label><select id="sStatus" onchange="filtStu()"><option value="">الكل</option><option value="active">نشط</option><option value="inactive">غير نشط</option></select></div>
+  </div>
+  <div id="stuTbl"></div>`;
+  filtStu();
+}
+window.filtStu=function(){
+  const q=(gv("sSearch")||"").toLowerCase(),cl=gv("sClass"),st=gv("sStatus");
+  const f=_data.students.filter(s=>(!q||s.firstName.toLowerCase().includes(q)||s.lastName.toLowerCase().includes(q)||s.email.toLowerCase().includes(q)||s.phone.includes(q))&&(!cl||_data.classes.find(c=>c.id===s.classId)?.name===cl)&&(!st||s.status===st));
+  const el=document.getElementById("stuTbl");if(!el)return;
+  el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>المعرف</th><th>الاسم</th><th>الجنس</th><th>Class</th><th>البريد</th><th>الهاتف</th><th>ولي الأمر</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${f.map(s=>`<tr>
+      <td style="color:var(--text3)">${s.id}</td>
+      <td><strong>${s.firstName} ${s.lastName}</strong></td>
+      <td>${s.gender==="M"?"ذكر":"أنثى"}</td>
+      <td><span class="hotel-badge">${_data.classes.find(c=>c.id===s.classId)?.name||"—"}</span></td>
+      <td style="font-size:.7rem">${s.email}</td>
+      <td>${s.phone||"—"}</td>
+      <td style="font-size:.7rem">${s.parentName||"—"}</td>
+      <td><span class="pill ${s.status==="active"?"pill-green":"pill-red"}">${s.status}</span></td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirStu('${s.id}')">✏️ Edit</button>
+        <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delStu('${s.id}')">🗑️</button></td>
+    </tr>`).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لم يتم العثور على طلاب</div>`;
+};
+window.abrirStu=function(id){
+  const s=id?_data.students.find(x=>x.id===id):null;
+  const isEdit=!!s;
+  showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} طالب</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg-2">
+      <div class="fg"><label>الاسم الأول *</label><input type="text" id="sfN" value="${isEdit?s.firstName:""}"/></div>
+      <div class="fg"><label>اسم العائلة *</label><input type="text" id="slN" value="${isEdit?s.lastName:""}"/></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>الجنس *</label><select id="sG"><option value="M" ${isEdit&&s.gender==="M"?"selected":""}>ذكر</option><option value="F" ${isEdit&&s.gender==="F"?"selected":""}>أنثى</option></select></div>
+      <div class="fg"><label>الفصل *</label><select id="sCl">${_data.classes.map(c=>`<option value="${c.id}" ${isEdit&&s.classId===c.id?"selected":""}>${c.name}</option>`).join("")}</select></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>Email</label><input type="email" id="sE" value="${isEdit?s.email:""}"/></div>
+      <div class="fg"><label>Phone</label><input type="tel" id="sP" value="${isEdit?s.phone:""}"/></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>اسم ولي الأمر</label><input type="text" id="sPN" value="${isEdit?s.parentName:""}"/></div>
+      <div class="fg"><label>هاتف ولي الأمر</label><input type="tel" id="sPP" value="${isEdit?s.parentPhone:""}"/></div>
+    </div>
+    <div class="fg"><label>العنوان</label><input type="text" id="sA" value="${isEdit?s.address:""}"/></div>
+    <div class="fg-2">
+      <div class="fg"><label>تاريخ الميلاد</label><input type="date" id="sD" value="${isEdit?s.dob:""}"/></div>
+      <div class="fg"><label>الحالة</label><select id="sSt"><option value="active" ${isEdit&&s.status==="active"?"selected":""}>Active</option><option value="inactive" ${isEdit&&s.status==="inactive"?"selected":""}>Inactive</option></select></div>
+    </div>
+    <div id="sMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarStu('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+};
+window.salvarStu=function(id){
+  const fn=gv("sfN"),ln=gv("slN"),g=gv("sG"),cl=gv("sCl");
+  if(!fn||!ln||!g||!cl){showMsg("sMsg","مطلوب: الاسم الأول، اسم العائلة، الجنس، الفصل","err");return}
+  const obj={firstName:fn,lastName:ln,gender:g,classId:cl,email:gv("sE"),phone:gv("sP"),parentName:gv("sPN"),parentPhone:gv("sPP"),address:gv("sA"),dob:gv("sD"),status:gv("sSt")||"active"};
+  if(id){Object.assign(_data.students.find(s=>s.id===id),obj);}
+  else{obj.id=genId();obj.enrollDate=hoje();_data.students.push(obj);}
+  saveData();closeModal();renderStuTbl();document.getElementById("sSearch")&&filtStu();
+};
+window.delStu=function(id){if(!confirm("حذف الطالب؟"))return;_data.students=_data.students.filter(s=>s.id!==id);saveData();filtStu()};
+
+// ══════════════════════════════════════
+//  TEACHERS (Admin)
+// ══════════════════════════════════════
+function vTeachers(){
+  loadData();document.getElementById("ttl").textContent="إدارة المعلمين";
+  document.getElementById("tsub").textContent=_data.teachers.length+ " معلم";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirTch()">+ Add Teacher</button>`;
+  renderTchTbl();
+}
+function renderTchTbl(){
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div id="tchTbl"></div>`;
+  const f=_data.teachers;
+  document.getElementById("tchTbl").innerHTML=`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>ID</th><th>Name</th><th>Gender</th><th>Subjects</th><th>Classes</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${f.map(t=>`<tr>
+      <td style="color:var(--text3)">${t.id}</td>
+      <td><strong>${t.firstName} ${t.lastName}</strong></td>
+      <td>${t.gender==="M"?"Male":"Female"}</td>
+      <td>${t.subjects.map(s=>`<span class="hotel-badge">${s}</span>`).join(" ")}</td>
+      <td>${t.classIds.map(c=>{const cl=_data.classes.find(x=>x.id===c);return cl?'<span class="pill pill-blue">'+cl.name+'</span>':""}).join(" ")}</td>
+      <td style="font-size:.7rem">${t.email}</td>
+      <td>${t.phone||"—"}</td>
+      <td><span class="pill ${t.status==="active"?"pill-green":"pill-red"}">${t.status}</span></td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirTch('${t.id}')">✏️ Edit</button>
+        <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delTch('${t.id}')">🗑️</button></td>
+    </tr>`).join("")}</tbody></table></div>`;
+};
+window.abrirTch=function(id){
+  const t=id?_data.teachers.find(x=>x.id===id):null;const isEdit=!!t;
+  showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} معلم</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg-2">
+      <div class="fg"><label>First Name *</label><input type="text" id="tfN" value="${isEdit?t.firstName:""}"/></div>
+      <div class="fg"><label>Last Name *</label><input type="text" id="tlN" value="${isEdit?t.lastName:""}"/></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>Gender *</label><select id="tG"><option value="M" ${isEdit&&t.gender==="M"?"selected":""}>Male</option><option value="F" ${isEdit&&t.gender==="F"?"selected":""}>Female</option></select></div>
+      <div class="fg"><label>Email</label><input type="email" id="tE" value="${isEdit?t.email:""}"/></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>Phone</label><input type="tel" id="tP" value="${isEdit?t.phone:""}"/></div>
+      <div class="fg"><label>المؤهل</label><input type="text" id="tQ" value="${isEdit?t.qualification:""}"/></div>
+    </div>
+    <div class="fg"><label>المواد (مفصولة بفواصل)</label><input type="text" id="tSub" value="${isEdit?t.subjects.join(", "):""}" placeholder="e.g. Mathematics, Physics"/></div>
+    <div class="fg"><label>الفصول المخصصة</label><div style="display:flex;flex-wrap:wrap;gap:.35rem">${_data.classes.map(c=>`<label style="display:flex;align-items:center;gap:.3rem;font-size:.75rem;cursor:pointer"><input type="checkbox" value="${c.id}" ${isEdit&&t.classIds.includes(c.id)?"checked":""} onchange="togTchCls(this)"/>${c.name}</label>`).join("")}</div></div>
+    <div class="fg"><label>الحالة</label><select id="tSt"><option value="active" ${isEdit&&t.status==="active"?"selected":""}>Active</option><option value="inactive" ${isEdit&&t.status==="inactive"?"selected":""}>Inactive</option></select></div>
+    <div id="tMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarTch('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+};
+window.togTchCls=function(cb){};
+window.salvarTch=function(id){
+  const fn=gv("tfN"),ln=gv("tlN");if(!fn||!ln){showMsg("tMsg","الاسم الأول واسم العائلة مطلوبان","err");return}
+  const subs=gv("tSub").split(",").map(s=>s.trim()).filter(Boolean);
+  const cls=Array.from(document.querySelectorAll("#mo input[type=checkbox]:checked")).map(c=>c.value);
+  const obj={firstName:fn,lastName:ln,gender:gv("tG"),email:gv("tE"),phone:gv("tP"),qualification:gv("tQ"),subjects:subs,classIds:cls,status:gv("tSt")||"active"};
+  if(id){Object.assign(_data.teachers.find(t=>t.id===id),obj);}
+  else{obj.id=genId();obj.hireDate=hoje();_data.teachers.push(obj);}
+  saveData();closeModal();vTeachers();
+};
+window.delTch=function(id){if(!confirm("حذف المعلم؟"))return;_data.teachers=_data.teachers.filter(t=>t.id!==id);saveData();vTeachers()};
+
+// ══════════════════════════════════════
+//  CLASSES (Admin)
+// ══════════════════════════════════════
+function vClasses(){
+  loadData();document.getElementById("ttl").textContent="إدارة الفصول";
+  document.getElementById("tsub").textContent=_data.classes.length+ " فصل";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirCls()">+ Add Class</button>`;
+  renderClsTbl();
+}
+function renderClsTbl(){
+  const el=document.getElementById("mc");const f=_data.classes;
+  el.innerHTML=`<div id="clsTbl"></div>`;
+  document.getElementById("clsTbl").innerHTML=`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>ID</th><th>Name</th><th>Section</th><th>Room</th><th>Homeroom Teacher</th><th>السعة</th><th>Students</th><th>Actions</th></tr></thead>
+    <tbody>${f.map(c=>{const t=_data.teachers.find(tc=>tc.id===c.teacherId);const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<tr>
+      <td style="color:var(--text3)">${c.id}</td>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.section}</td>
+      <td>Room ${c.room}</td>
+      <td>${t?t.firstName+" "+t.lastName:"—"}</td>
+      <td>${c.capacity}</td>
+      <td><span class="pill ${cnt>=c.capacity?"pill-red":"pill-green"}">${cnt}</span></td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirCls('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delCls('${c.id}')">🗑️</button></td>
+    </tr>`}).join("")}</tbody></table></div>`;
+}
+window.abrirCls=function(id){
+  const c=id?_data.classes.find(x=>x.id===id):null;const isEdit=!!c;
+  showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} فصل</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg-2">
+      <div class="fg"><label>اسم الفصل *</label><input type="text" id="cN" value="${isEdit?c.name:""}" placeholder="e.g. 7th Grade"/></div>
+      <div class="fg"><label>القسم</label><input type="text" id="cS" value="${isEdit?c.section:""}" placeholder="e.g. A"/></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>القاعة</label><input type="text" id="cR" value="${isEdit?c.room:""}" placeholder="e.g. 101"/></div>
+      <div class="fg"><label>السعة</label><input type="number" id="cCap" value="${isEdit?c.capacity:30}"/></div>
+    </div>
+    <div class="fg"><label>معلم الفصل</label><select id="cT"><option value="">—</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}" ${isEdit&&c.teacherId===t.id?"selected":""}>${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
+    <div id="cMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarCls('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+};
+window.salvarCls=function(id){
+  const n=gv("cN");if(!n){showMsg("cMsg","اسم الفصل مطلوب","err");return}
+  const obj={name:n,section:gv("cS"),room:gv("cR"),capacity:parseInt(gv("cCap"))||30,teacherId:gv("cT")};
+  if(id){Object.assign(_data.classes.find(c=>c.id===id),obj);}
+  else{obj.id=genId();obj.students=0;_data.classes.push(obj);}
+  saveData();closeModal();vClasses();
+};
+window.delCls=function(id){if(!confirm("حذف الفصل؟"))return;_data.classes=_data.classes.filter(c=>c.id!==id);saveData();vClasses()};
+
+// ══════════════════════════════════════
+//  SUBJECTS (Admin)
+// ══════════════════════════════════════
+function vSubjects(){
+  loadData();document.getElementById("ttl").textContent="المواد";
+  document.getElementById("tsub").textContent=_data.subjects.length+ " مادة";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirSub()">+ Add Subject</button>`;
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>الرمز</th><th>Name</th><th>المعلم</th><th>ساعات/أسبوع</th><th>Actions</th></tr></thead>
+    <tbody>${_data.subjects.map(s=>{const t=_data.teachers.find(tc=>tc.id===s.teacherId);return`<tr>
+      <td><span class="pill pill-blue">${s.code}</span></td>
+      <td><strong>${s.name}</strong></td>
+      <td>${t?t.firstName+" "+t.lastName:"—"}</td>
+      <td>${s.hours}h</td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirSub('${s.id}')">✏️ Edit</button>
+        <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delSub('${s.id}')">🗑️</button></td>
+    </tr>`}).join("")}</tbody></table></div>`;
+}
+window.abrirSub=function(id){
+  const s=id?_data.subjects.find(x=>x.id===id):null;const isEdit=!!s;
+  showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} مادة</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg-2">
+      <div class="fg"><label>اسم المادة *</label><input type="text" id="sbN" value="${isEdit?s.name:""}"/></div>
+      <div class="fg"><label>الرمز</label><input type="text" id="sbC" value="${isEdit?s.code:""}" placeholder="e.g. MATH"/></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>المعلم</label><select id="sbT"><option value="">—</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}" ${isEdit&&s.teacherId===t.id?"selected":""}>${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
+      <div class="fg"><label>ساعات/أسبوع</label><input type="number" id="sbH" value="${isEdit?s.hours:3}"/></div>
+    </div>
+    <div id="sbMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarSub('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+};
+window.salvarSub=function(id){
+  const n=gv("sbN");if(!n){showMsg("sbMsg","اسم المادة مطلوب","err");return}
+  const obj={name:n,code:gv("sbC")||n.slice(0,4).toUpperCase(),teacherId:gv("sbT"),hours:parseInt(gv("sbH"))||3};
+  if(id){Object.assign(_data.subjects.find(s=>s.id===id),obj);}
+  else{obj.id=genId();_data.subjects.push(obj);}
+  saveData();closeModal();vSubjects();
+};
+window.delSub=function(id){if(!confirm("حذف المادة؟"))return;_data.subjects=_data.subjects.filter(s=>s.id!==id);saveData();vSubjects()};
+
+// ══════════════════════════════════════
+//  GRADES (Admin)
+// ══════════════════════════════════════
+function vGrades(){
+  loadData();document.getElementById("ttl").textContent="إدارة الدرجات";
+  document.getElementById("tsub").textContent=_data.grades.length+ " سجل درجة";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirGrd()">+ Add Grade</button>`;
+  renderGrdTbl();
+}
+function renderGrdTbl(){
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="filters">
+    <div class="fg-f grow"><label>Search</label><input id="gSearch" placeholder="🔍 بحث عن طالب..." oninput="filtGrd()"/></div>
+    <div class="fg-f"><label>المادة</label><select id="gSub" onchange="filtGrd()"><option value="">الكل</option>${_data.subjects.map(s=>`<option>${s.name}</option>`).join("")}</select></div>
+    <div class="fg-f"><label>الفصل</label><select id="gCls" onchange="filtGrd()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div>
+  </div>
+  <div id="grdTbl"></div>`;
+  filtGrd();
+}
+window.filtGrd=function(){
+  const q=(gv("gSearch")||"").toLowerCase(),sub=gv("gSub"),cl=gv("gCls");
+  const f=_data.grades.filter(g=>{const s=_data.students.find(x=>x.id===g.studentId);const sb=_data.subjects.find(x=>x.id===g.subjectId);return(!q||(s?.firstName?.toLowerCase().includes(q)||s?.lastName?.toLowerCase().includes(q)))&&(!sub||sb?.name===sub)&&(!cl||!s||_data.classes.find(c=>c.id===s.classId)?.name===cl);});
+  const el=document.getElementById("grdTbl");if(!el)return;
+  el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Student</th><th>Subject</th><th>1st Term</th><th>2nd Term</th><th>Exam</th><th>Average</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${f.map(g=>{const s=_data.students.find(x=>x.id===g.studentId);const sb=_data.subjects.find(x=>x.id===g.subjectId);const avg=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
+      <td><strong>${s?s.firstName+" "+s.lastName:"—"}</strong></td>
+      <td><span class="hotel-badge">${sb?sb.name:"—"}</span></td>
+      <td>${g.firstTerm||"—"}</td><td>${g.secondTerm||"—"}</td><td>${g.majorExam||"—"}</td>
+      <td style="font-weight:600;color:${gradeColor(avg)}">${avg.toFixed(1)}</td>
+      <td><span class="pill ${gradePill(avg)}">${gradeLabel(avg)}</span></td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirGrd('${g.id}')">✏️</button>
+        <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delGrd('${g.id}')">🗑️</button></td>
+    </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">No grades found.</div>`;
+};
+window.abrirGrd=function(id){
+  const g=id?_data.grades.find(x=>x.id===id):null;const isEdit=!!g;
+  showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} درجة</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg-2">
+      <div class="fg"><label>الطالب *</label><select id="gStu"><option value="">—</option>${_data.students.filter(s=>s.status==="active").map(s=>`<option value="${s.id}" ${isEdit&&g.studentId===s.id?"selected":""}>${s.firstName} ${s.lastName}</option>`).join("")}</select></div>
+      <div class="fg"><label>المادة *</label><select id="gSubj"><option value="">—</option>${_data.subjects.map(s=>`<option value="${s.id}" ${isEdit&&g.subjectId===s.id?"selected":""}>${s.name}</option>`).join("")}</select></div>
+    </div>
+    <div class="fg-3">
+      <div class="fg"><label>الفصل الأول</label><input type="number" id="g1" value="${isEdit?g.firstTerm:""}" step="0.1" min="0" max="10"/></div>
+      <div class="fg"><label>الفصل الثاني</label><input type="number" id="g2" value="${isEdit?g.secondTerm:""}" step="0.1" min="0" max="10"/></div>
+      <div class="fg"><label>الامتحان النهائي</label><input type="number" id="gE" value="${isEdit?g.majorExam:""}" step="0.1" min="0" max="10"/></div>
+    </div>
+    <div class="fg"><label>تعليق</label><textarea id="gC" rows="2">${isEdit?g.comment||"":""}</textarea></div>
+    <div id="gMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarGrd('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+};
+window.salvarGrd=function(id){
+  const stu=gv("gStu"),sub=gv("gSubj");if(!stu||!sub){showMsg("gMsg","الطالب والمادة مطلوبان","err");return}
+  const obj={studentId:stu,subjectId:sub,firstTerm:parseFloat(gv("g1"))||0,secondTerm:parseFloat(gv("g2"))||0,majorExam:parseFloat(gv("gE"))||0,comment:gv("gC")};
+  if(id){Object.assign(_data.grades.find(g=>g.id===id),obj);}
+  else{obj.id=genId();_data.grades.push(obj);}
+  saveData();closeModal();renderGrdTbl();document.getElementById("gSearch")&&filtGrd();
+};
+window.delGrd=function(id){if(!confirm("حذف الدرجة؟"))return;_data.grades=_data.grades.filter(g=>g.id!==id);saveData();filtGrd()};
+
+// ══════════════════════════════════════
+//  ATTENDANCE (Admin)
+// ══════════════════════════════════════
+function vAttendance(){
+  loadData();document.getElementById("ttl").textContent="سجلات الحضور";
+  document.getElementById("tsub").textContent=_data.attendance.length+ " سجل";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirAtt()">+ Record Attendance</button>`;
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="filters">
+    <div class="fg-f"><label>التاريخ</label><input type="date" id="attDate" value="${hoje()}" onchange="filtAtt()"/></div>
+    <div class="fg-f"><label>الفصل</label><select id="attCls" onchange="filtAtt()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div>
+    <div class="fg-f"><label>الحالة</label><select id="attSt" onchange="filtAtt()"><option value="">الكل</option><option value="Present">حاضر</option><option value="Late">متأخر</option><option value="Absent">غائب</option></select></div>
+  </div>
+  <div id="attTbl"></div>`;
+  filtAtt();
+}
+window.filtAtt=function(){
+  const dt=gv("attDate"),cl=gv("attCls"),st=gv("attSt");
+  const f=_data.attendance.filter(a=>{const s=_data.students.find(x=>x.id===a.studentId);return(!dt||a.date===dt)&&(!cl||!s||_data.classes.find(c=>c.id===s.classId)?.name===cl)&&(!st||a.status===st);});
+  const el=document.getElementById("attTbl");if(!el)return;
+  el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${f.map(a=>{const s=_data.students.find(x=>x.id===a.studentId);return`<tr>
+      <td>${isoDate(a.date)}</td>
+      <td><strong>${s?s.firstName+" "+s.lastName:"—"}</strong></td>
+      <td><span class="hotel-badge">${s&&_data.classes.find(c=>c.id===s.classId)?.name||"—"}</span></td>
+      <td><span class="pill ${attPill(a.status)}">${attLabel(a.status)}</span></td>
+      <td><button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delAtt('${a.id}')">🗑️</button></td>
+    </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لم يتم العثور على سجلات</div>`;
+};
+window.abrirAtt=function(){
+  showModal(`<div class="modal-head"><h2>Record Attendance</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg"><label>Date *</label><input type="date" id="aDate" value="${hoje()}"/></div>
+    <div class="fg"><label>Class *</label><select id="aCls" onchange="loadAttStu()"><option value="">اختر الفصل</option>${_data.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
+    <div id="attStuList"></div>
+    <div id="aMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarAtt()">Save All</button></div>`,"modal-lg");
+};
+window.loadAttStu=function(){
+  const cl=gv("aCls");const el=document.getElementById("attStuList");if(!cl||!el){el.innerHTML="";return}
+  const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
+  el.innerHTML=`<div class="sec-t" style="margin-top:.5rem">Students</div>`+sts.map(s=>`<div class="toggle-row"><div class="toggle-info">${s.firstName} ${s.lastName}</div>
+    <select id="ast_${s.id}" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:.25rem .5rem;font-size:.75rem">
+      <option value="Present">✅ حاضر</option><option value="Late">⏳ متأخر</option><option value="Absent">❌ غائب</option>
+    </select></div>`).join("");
+};
+window.salvarAtt=function(){
+  const dt=gv("aDate"),cl=gv("aCls");if(!dt||!cl){showMsg("aMsg","التاريخ والفصل مطلوبان","err");return}
+  const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
+  if(!sts.length){showMsg("aMsg","لا يوجد طلاب في هذا الفصل","err");return}
+  sts.forEach(s=>{const st=document.getElementById("ast_"+s.id)?.value||"Present";
+    if(!_data.attendance.find(a=>a.studentId===s.id&&a.date===dt)){
+      _data.attendance.push({id:genId(),studentId:s.id,date:dt,status:st,teacherId:"TCH01"});
+    }
+  });
+  saveData();showMsg("aMsg","✅ تم حفظ الحضور!","ok");setTimeout(closeModal,800);
+};
+window.delAtt=function(id){_data.attendance=_data.attendance.filter(a=>a.id!==id);saveData();filtAtt()};
+
+// ══════════════════════════════════════
+//  SCHEDULE (Admin)
+// ══════════════════════════════════════
+function vSchedule(){
+  loadData();document.getElementById("ttl").textContent="الجدول الدراسي";
+  document.getElementById("tsub").textContent=_data.schedule.length+ " حصة";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirSch()">+ Add Slot</button>`;
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="filters"><div class="fg-f"><label>الفصل</label><select id="schCls" onchange="renderSch()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div></div><div id="schTbl"></div>`;
+  renderSch();
+}
+function renderSch(){
+  const cl=gv("schCls")||"";const el=document.getElementById("schTbl");if(!el)return;
+  const f=_data.schedule.filter(s=>!cl||_data.classes.find(c=>c.id===s.classId)?.name===cl);
+  el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>اليوم</th><th>الوقت</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Room</th><th>Actions</th></tr></thead>
+    <tbody>${f.map(s=>{const c=_data.classes.find(x=>x.id===s.classId);const sb=_data.subjects.find(x=>x.id===s.subjectId);const t=_data.teachers.find(x=>x.id===s.teacherId);return`<tr>
+      <td><span class="pill pill-blue">${s.day}</span></td>
+      <td>${s.startTime} - ${s.endTime}</td>
+      <td><strong>${c?c.name:"—"}</strong></td>
+      <td><span class="hotel-badge">${sb?sb.name:"—"}</span></td>
+      <td>${t?t.firstName+" "+t.lastName:"—"}</td>
+      <td>Room ${s.room}</td>
+      <td><button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delSch('${s.id}')">🗑️</button></td>
+    </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لا توجد حصص جدولية</div>`;
+}
+window.abrirSch=function(){
+  showModal(`<div class="modal-head"><h2>Add Schedule Slot</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg-2">
+      <div class="fg"><label>Day *</label><select id="schDay">${DIAS_SEMANA.map(d=>`<option>${d}</option>`).join("")}</select></div>
+      <div class="fg"><label>الفصل *</label><select id="schCl">${_data.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>المادة *</label><select id="schSub">${_data.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join("")}</select></div>
+      <div class="fg"><label>المعلم</label><select id="schTch"><option value="">Auto</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
+    </div>
+    <div class="fg-2">
+      <div class="fg"><label>Start Time</label><input type="time" id="schST" value="08:00"/></div>
+      <div class="fg"><label>End Time</label><input type="time" id="schET" value="09:00"/></div>
+    </div>
+    <div class="fg"><label>Room</label><input type="text" id="schR" value=""/></div>
+    <div id="schMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarSch()">إضافة</button></div>`,"modal-sm");
+};
+window.salvarSch=function(){
+  const day=gv("schDay"),cl=gv("schCl"),sub=gv("schSub");
+  if(!day||!cl||!sub){showMsg("schMsg","اليوم والفصل والمادة مطلوبون","err");return}
+  const tch=gv("schTch")||_data.subjects.find(s=>s.id===sub)?.teacherId||"";
+  _data.schedule.push({id:genId(),classId:cl,day,subjectId:sub,teacherId:tch,startTime:gv("schST")||"08:00",endTime:gv("schET")||"09:00",room:gv("schR")||"101"});
+  saveData();closeModal();renderSch();
+};
+window.delSch=function(id){_data.schedule=_data.schedule.filter(s=>s.id!==id);saveData();renderSch()};
+
+// ══════════════════════════════════════
+//  USERS (Admin)
+// ══════════════════════════════════════
+function vUsers(){
+  loadData();document.getElementById("ttl").textContent="حسابات المستخدمين";
+  document.getElementById("tsub").textContent=_data.users.length+ " مستخدم";
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirUsr()">+ Add User</button>`;
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Name</th><th>Email</th><th>الدور</th><th>كلمة المرور</th><th>Actions</th></tr></thead>
+    <tbody>${_data.users.map(u=>`<tr>
+      <td><strong>${u.nome}</strong></td>
+      <td>${u.email}</td>
+      <td><span class="pill ${u.role==="admin"?"pill-green":u.role==="teacher"?"pill-amber":"pill-blue"}">${u.role}</span></td>
+      <td style="font-family:monospace;color:var(--text3)">${u.password}</td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirUsr('${u.id}')">✏️ Edit</button>
+        <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delUsr('${u.id}')">🗑️</button></td>
+    </tr>`).join("")}</tbody></table></div>`;
+}
+window.abrirUsr=function(id){
+  const u=id?_data.users.find(x=>x.id===id):null;const isEdit=!!u;
+  showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} مستخدم</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="fg"><label>الاسم *</label><input type="text" id="uN" value="${isEdit?u.nome:""}"/></div>
+    <div class="fg"><label>البريد الإلكتروني *</label><input type="email" id="uE" value="${isEdit?u.email:""}"/></div>
+    <div class="fg-2">
+      <div class="fg"><label>كلمة المرور *</label><input type="text" id="uP" value="${isEdit?u.password:""}"/></div>
+      <div class="fg"><label>الدور *</label><select id="uR"><option value="admin" ${isEdit&&u.role==="admin"?"selected":""}>Admin</option><option value="teacher" ${isEdit&&u.role==="teacher"?"selected":""}>Teacher</option><option value="student" ${isEdit&&u.role==="student"?"selected":""}>Student</option></select></div>
+    </div>
+    <div id="uMsg" class="fmsg" style="display:none"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-p" onclick="salvarUsr('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+};
+window.salvarUsr=function(id){
+  const n=gv("uN"),e=gv("uE"),p=gv("uP"),r=gv("uR");if(!n||!e||!p){showMsg("uMsg","الاسم والبريد الإلكتروني وكلمة المرور مطلوبون","err");return}
+  const obj={nome:n,email:e,password:p,role:r||"student",avatar:n[0].toUpperCase()};
+  if(id){Object.assign(_data.users.find(u=>u.id===id),obj);}
+  else{obj.id=genId();_data.users.push(obj);}
+  saveData();closeModal();vUsers();
+};
+window.delUsr=function(id){if(_data.users.length<=1||!confirm("حذف المستخدم؟"))return;_data.users=_data.users.filter(u=>u.id!==id);saveData();vUsers()};
+
+// ══════════════════════════════════════
+//  TEACHER VIEWS
+// ══════════════════════════════════════
+function vMyClasses(){
+  loadData();document.getElementById("ttl").textContent="فصولي";
+  const t=_data.teachers.find(tc=>tc.email===CU.email)||_data.teachers[0];
+  document.getElementById("tsub").textContent=t?t.subjects.join(", "):"";
+  document.getElementById("tact").innerHTML="";
+  const myC=_data.classes.filter(c=>t.classIds.includes(c.id));
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="stats-row">${myC.map(c=>{const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<div class="stat-card green" style="cursor:pointer" onclick="sw('my_students')"><div class="stat-val">${c.name} ${c.section}</div><div class="stat-label">Room ${c.room}</div><div class="stat-sub">${cnt} students</div></div>`}).join("")}</div>
+  <div class="card"><div class="sec-t">📋 Class Details</div><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Class</th><th>Room</th><th>Capacity</th><th>Students</th><th>متاح</th></tr></thead>
+    <tbody>${myC.map(c=>{const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<tr><td><strong>${c.name} ${c.section}</strong></td><td>Room ${c.room}</td><td>${c.capacity}</td><td>${cnt}</td><td><span class="pill ${c.capacity-cnt>0?"pill-green":"pill-red"}">${c.capacity-cnt}</span></td></tr>`}).join("")}</tbody></table></div></div>`;
+}
+function vMyStudents(){
+  loadData();document.getElementById("ttl").textContent="طلابي";
+  const t=_data.teachers.find(tc=>tc.email===CU.email)||_data.teachers[0];
+  document.getElementById("tsub").textContent=t?t.firstName+" "+t.lastName:"";
+  document.getElementById("tact").innerHTML="";
+  const myS=_data.students.filter(s=>t.classIds.includes(s.classId));
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="stats-row">
+    <div class="stat-card green"><div class="stat-val">${myS.length}</div><div class="stat-label">Total Students</div></div>
+    <div class="stat-card blue"><div class="stat-val">${myS.filter(s=>s.status==="active").length}</div><div class="stat-label">Active</div></div>
+  </div>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Name</th><th>Class</th><th>Gender</th><th>Email</th><th>Phone</th><th>Parent</th></tr></thead>
+    <tbody>${myS.map(s=>`<tr>
+      <td><strong>${s.firstName} ${s.lastName}</strong></td>
+      <td><span class="hotel-badge">${_data.classes.find(c=>c.id===s.classId)?.name||"—"}</span></td>
+      <td>${s.gender==="M"?"Male":"Female"}</td>
+      <td style="font-size:.7rem">${s.email}</td>
+      <td>${s.phone||"—"}</td>
+      <td>${s.parentName||"—"}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+}
+function vGradeMgt(){
+  loadData();document.getElementById("ttl").textContent="إدارة الدرجات";
+  const t=_data.teachers.find(tc=>tc.email===CU.email)||_data.teachers[0];
+  document.getElementById("tsub").textContent=t?t.firstName+" "+t.lastName:"";
+  document.getElementById("tact").innerHTML="";
+  const myS=_data.students.filter(s=>t.classIds.includes(s.classId));
+  const mySubs=_data.subjects.filter(s=>t.subjects.includes(s.name));
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="filters">
+    <div class="fg-f"><label>الفصل</label><select id="tgCls" onchange="renderGradeMgt()"><option value="">الكل</option>${t.classIds.map(cid=>{const c=_data.classes.find(x=>x.id===cid);return c?`<option value="${c.id}">${c.name}</option>`:""}).join("")}</select></div>
+    <div class="fg-f"><label>المادة</label><select id="tgSub" onchange="renderGradeMgt()"><option value="">الكل</option>${mySubs.map(s=>`<option value="${s.id}">${s.name}</option>`).join("")}</select></div>
+  </div>
+  <div id="gradeMgtTbl"></div>`;
+  renderGradeMgt();
+  function renderGradeMgt(){
+    const cls=gv("tgCls"),sub=gv("tgSub");
+    const f=myS.filter(s=>!cls||s.classId===cls);
+    const el2=document.getElementById("gradeMgtTbl");if(!el2)return;
+    el2.innerHTML=`<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Student</th><th>Class</th>${mySubs.map(s=>`<th>${s.name}</th>`).join("")}</tr></thead>
+      <tbody>${f.map(s=>`<tr>
+        <td><strong>${s.firstName} ${s.lastName}</strong></td>
+        <td><span class="hotel-badge">${_data.classes.find(c=>c.id===s.classId)?.name||"—"}</span></td>
+        ${mySubs.map(subj=>{const g=_data.grades.find(g=>g.studentId===s.id&&g.subjectId===subj.id);const avg=g?((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3:0;return`<td style="color:${g?gradeColor(avg):"var(--text3)"};font-weight:600">${g?avg.toFixed(1):"—"}</td>`}).join("")}
+      </tr>`).join("")}</tbody></table></div>`;
+  }
+}
+function vTakeAttendance(){
+  loadData();document.getElementById("ttl").textContent="تسجيل الحضور";
+  const t=_data.teachers.find(tc=>tc.email===CU.email)||_data.teachers[0];
+  document.getElementById("tsub").textContent="اختر الفصل والتاريخ";
+  document.getElementById("tact").innerHTML="";
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="card" style="max-width:500px">
+    <div class="fg"><label>Class *</label><select id="taCls" onchange="loadTaStu()">${t.classIds.map(cid=>{const c=_data.classes.find(x=>x.id===cid);return c?`<option value="${c.id}">${c.name}</option>`:""}).join("")}</select></div>
+    <div class="fg"><label>Date *</label><input type="date" id="taDate" value="${hoje()}"/></div>
+    <div id="taStuList"></div>
+    <div id="taMsg" class="fmsg" style="display:none"></div>
+    <button class="btn btn-p" style="width:100%;margin-top:.5rem" onclick="salvarTa()">✅ Save Attendance</button>
+  </div>`;
+}
+window.loadTaStu=function(){
+  const cl=gv("taCls");const el=document.getElementById("taStuList");if(!cl||!el){el.innerHTML="";return}
+  const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
+  el.innerHTML=`<div class="sec-t" style="margin-top:.5rem">Students (${sts.length})</div>`+sts.map(s=>`<div class="toggle-row"><div class="toggle-info">${s.firstName} ${s.lastName}</div>
+    <select id="tas_${s.id}" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:.25rem .5rem;font-size:.75rem">
+      <option value="Present">✅ Present</option><option value="Late">⏳ Late</option><option value="Absent">❌ Absent</option>
+    </select></div>`).join("");
+};
+window.salvarTa=function(){
+  const dt=gv("taDate"),cl=gv("taCls");if(!dt||!cl){showMsg("taMsg","Date and class required","err");return}
+  const t=(_data.teachers.find(tc=>tc.email===CU.email)||_data.teachers[0]);
+  const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
+  sts.forEach(s=>{const st=document.getElementById("tas_"+s.id)?.value||"Present";
+    const ex=_data.attendance.find(a=>a.studentId===s.id&&a.date===dt);
+    if(ex)ex.status=st;else _data.attendance.push({id:genId(),studentId:s.id,date:dt,status:st,teacherId:t.id});
+  });
+  saveData();showMsg("taMsg","✅ Attendance saved!","ok");
+};
+
+// ══════════════════════════════════════
+//  STUDENT VIEWS
+// ══════════════════════════════════════
+function vMyGrades(){
+  loadData();document.getElementById("ttl").textContent="درجاتي";
+  const s=_data.students.find(st=>st.email===CU.email)||_data.students[0];
+  document.getElementById("tsub").textContent=s?s.firstName+" "+s.lastName:"";
+  document.getElementById("tact").innerHTML="";
+  const myG=_data.grades.filter(g=>g.studentId===s.id);
+  const avg=myG.length?myG.reduce((sum,g)=>{const t=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return sum+t},0)/myG.length:0;
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="stats-row">
+    <div class="stat-card green"><div class="stat-val">${myG.length}</div><div class="stat-label">Subjects</div></div>
+    <div class="stat-card amber"><div class="stat-val">${avg.toFixed(1)}</div><div class="stat-label">Overall Average</div></div>
+    <div class="stat-card ${avg>=7?"green":avg>=5?"amber":"red"}"><div class="stat-val">${avg>=7?"✅ ممتاز":avg>=5?"📖 جيد":"📚 بحاجة عمل"}</div><div class="stat-label">Status</div></div>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Subject</th><th>Code</th><th>1st Term</th><th>2nd Term</th><th>Exam</th><th>Average</th><th>Status</th></tr></thead>
+    <tbody>${myG.map(g=>{const sub=_data.subjects.find(x=>x.id===g.subjectId);const avg2=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
+      <td><strong>${sub?sub.name:"—"}</strong></td>
+      <td><span class="pill pill-blue">${sub?sub.code:"—"}</span></td>
+      <td>${g.firstTerm||"—"}</td><td>${g.secondTerm||"—"}</td><td>${g.majorExam||"—"}</td>
+      <td style="font-weight:600;color:${gradeColor(avg2)}">${avg2.toFixed(1)}</td>
+      <td><span class="pill ${gradePill(avg2)}">${gradeLabel(avg2)}</span></td>
+    </tr>`}).join("")}</tbody></table></div></div>`;
+}
+function vMySchedule(){
+  loadData();document.getElementById("ttl").textContent="My Schedule";
+  const s=_data.students.find(st=>st.email===CU.email)||_data.students[0];
+  document.getElementById("tsub").textContent=s?s.firstName+" "+s.lastName:"";
+  document.getElementById("tact").innerHTML="";
+  const mySch=_data.schedule.filter(sc=>sc.classId===s.classId);
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="card">${DIAS_SEMANA.map(day=>{const slots=mySch.filter(sc=>sc.day===day).sort((a,b)=>a.startTime.localeCompare(b.startTime));return slots.length?`
+    <div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:.85rem;color:var(--accent);margin-bottom:.3rem">${day}</div>
+    ${slots.map(sl=>{const sb=_data.subjects.find(x=>x.id===sl.subjectId);const t=_data.teachers.find(x=>x.id===sl.teacherId);return`<div style="display:flex;align-items:center;gap:.6rem;padding:.35rem .6rem;background:var(--bg3);border-radius:5px;margin-bottom:.25rem;font-size:.78rem">
+      <span style="color:var(--text3);font-family:monospace;font-size:.7rem">${sl.startTime}</span>
+      <span style="flex:1"><strong>${sb?sb.name:"—"}</strong></span>
+      <span style="color:var(--text3);font-size:.7rem">${t?t.firstName+" "+t.lastName:""}</span>
+      <span class="hotel-badge">Room ${sl.room}</span>
+    </div>`}).join("")}</div>`:""}).join("")}
+  ${mySch.length?"":"<div style='padding:1rem;text-align:center;color:var(--text3)'>No schedule available.</div>"}</div>`;
+}
+function vMyAttendance(){
+  loadData();document.getElementById("ttl").textContent="حضوري";
+  const s=_data.students.find(st=>st.email===CU.email)||_data.students[0];
+  document.getElementById("tsub").textContent=s?s.firstName+" "+s.lastName:"";
+  document.getElementById("tact").innerHTML="";
+  const myAtt=_data.attendance.filter(a=>a.studentId===s.id);
+  const pres=myAtt.filter(a=>a.status==="Present").length,late=myAtt.filter(a=>a.status==="Late").length,abs=myAtt.filter(a=>a.status==="Absent").length;
+  const el=document.getElementById("mc");
+  el.innerHTML=`<div class="stats-row">
+    <div class="stat-card green"><div class="stat-val">${pres}</div><div class="stat-label">Present</div></div>
+    <div class="stat-card amber"><div class="stat-val">${late}</div><div class="stat-label">Late</div></div>
+    <div class="stat-card red"><div class="stat-val">${abs}</div><div class="stat-label">Absent</div></div>
+    <div class="stat-card blue"><div class="stat-val">${myAtt.length?Math.round(pres/myAtt.length*100):0}%</div><div class="stat-label">Attendance Rate</div></div>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Date</th><th>Status</th></tr></thead>
+    <tbody>${myAtt.sort((a,b)=>b.date.localeCompare(a.date)).map(a=>`<tr><td>${isoDate(a.date)}</td><td><span class="pill ${attPill(a.status)}">${a.status}</span></td></tr>`).join("")}</tbody></table></div></div>`;
+}
+
+// ══════════════════════════════════════
+//  THEME TOGGLE
+// ══════════════════════════════════════
+(function initTheme(){
+  const t=localStorage.getItem("scl_theme");
+  if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+})();
+window.toggleTheme=function(){
+  const h=document.documentElement;
+  const isLight=h.getAttribute("data-theme")==="light";
+  if(isLight){h.removeAttribute("data-theme");localStorage.setItem("scl_theme","dark");document.getElementById("themeToggle").textContent="🌙";}
+  else{h.setAttribute("data-theme","light");localStorage.setItem("scl_theme","light");document.getElementById("themeToggle").textContent="☀️";}
+};
+
+// ══════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════
+(async function boot(){
+  const saved=localStorage.getItem("scl_user");
+  loadData();
+  if(saved){
+    try{
+      const user=JSON.parse(saved);
+      CU=user;CR=user.role;
+      renderShell();
+    }catch(e){localStorage.removeItem("scl_user");CU=null;CR=null;renderLogin();}
+  }else{CU=null;CR=null;renderLogin();}
+})();
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -35,7 +36,9 @@ html{direction:rtl}
 .app{display:flex;height:100vh;width:100vw}
 /* SIDEBAR */
 .sidebar{width:218px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden}
+  display:flex;flex-direction:column;overflow:hidden;transition:width .25s cubic-bezier(.4,0,.2,1)}
+.sidebar.collapsed{width:0;border-left-color:transparent;padding:0}
+.sidebar.collapsed>*{opacity:0;pointer-events:none}
 .sb-brand{padding:1rem 1.1rem .8rem;border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:.65rem}
 .sb-logo{width:30px;height:30px;border-radius:7px;
@@ -49,7 +52,7 @@ html{direction:rtl}
 .nav-item{display:flex;align-items:center;gap:.6rem;padding:.48rem .7rem;border-radius:7px;
   cursor:pointer;color:var(--text2);font-size:.79rem;font-weight:500;transition:all .13s;
   position:relative;user-select:none;border:none;background:none;width:100%;
-  text-align:left;font-family:inherit}
+  text-align:right;font-family:inherit}
 .nav-item:hover{background:var(--bg4);color:var(--text)}
 .nav-item.active{background:rgba(232,160,32,.1);color:var(--accent);font-weight:600}
 .ni-icon{font-size:.85rem;width:17px;text-align:center;flex-shrink:0}
@@ -100,8 +103,10 @@ html{direction:rtl}
 .stats-row{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:1.1rem}
 .stats-row .stat-card{flex:1;min-width:130px}
 /* TABLE */
-.hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.2rem;
-  cursor:pointer;padding:.2rem;flex-shrink:0;line-height:1}
+.hamburger{display:flex;align-items:center;justify-content:center;background:none;border:none;color:var(--text2);font-size:1.15rem;
+  cursor:pointer;width:32px;height:32px;flex-shrink:0;border-radius:8px;transition:all .2s;line-height:1;position:relative}
+.hamburger:hover{background:var(--bg4);color:var(--accent)}
+.hamburger.sb-closed{transform:rotate(180deg)}
 .sb-overlay{display:none}
 .tbl-wrap{border:1px solid var(--border);border-radius:var(--r);overflow-x:auto}
 .tbl{width:100%;border-collapse:collapse;font-size:.76rem}
@@ -289,9 +294,15 @@ html{direction:rtl}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @media(max-width:768px){
-  .hamburger{display:block}
   .sidebar{position:fixed;top:0;right:-240px;z-index:900;height:100vh;width:218px;
-    transition:left .22s ease;display:flex;box-shadow:var(--shadow2)}
+    transition:right .22s ease;display:flex;box-shadow:var(--shadow2)}
+  .sidebar.open{right:0}
+  .sidebar.collapsed{width:218px;border-left-color:inherit;padding:inherit}
+  .sidebar.collapsed>*{opacity:1;pointer-events:auto}
+  .sidebar.collapsed:not(.open){right:-240px}
+  .hamburger.sb-closed{transform:none}
+  .sidebar{position:fixed;top:0;right:-240px;z-index:900;height:100vh;width:218px;
+    transition:right .22s ease;display:flex;box-shadow:var(--shadow2)}
   .sidebar.open{right:0}
   .sb-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;
     pointer-events:none;transition:opacity .22s}
@@ -330,12 +341,13 @@ const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||""};
 const hoje=()=>new Date().toISOString().slice(0,10);
 const genId=()=>"ID"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const R$=v=>"$ "+(parseFloat(v)||0).toLocaleString("en-US",{minimumFractionDigits:2});
-const isoDate=raw=>{if(!raw)return"—";try{return new Date(raw).toLocaleDateString("en-US")}catch{return raw}};
-const hojeLocal=()=>{const d=new Date();return d.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})};
+const isoDate=raw=>{if(!raw)return"—";try{const d=new Date(raw);return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()+","+d.toLocaleDateString("ar-SA",{weekday:"long"})}catch{return raw}};
+const hojeLocal=()=>{const d=new Date();return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()+","+d.toLocaleDateString("ar-SA",{weekday:"long"})};
 const gradeColor=g=>g>=7?"var(--green)":g>=5?"var(--accent)":"var(--red)";
 const gradePill=g=>g>=7?"pill-green":g>=5?"pill-amber":"pill-red";
 const gradeLabel=g=>g>=7?"ممتاز":g>=5?"جيد":"بحاجة تحسين";
-const attPill=s=>s==="حاضر"?"pill-green":s==="متأخر"?"pill-amber":"pill-red";
+const attPill=s=>s==="حاضر"||s==="Present"?"pill-green":s==="متأخر"||s==="Late"?"pill-amber":"pill-red";
+const attLabel=s=>s==="Present"||s==="حاضر"?"حاضر":s==="Late"||s==="متأخر"?"متأخر":"غائب";
 
 // ── MODAL ──
 function showModal(html,cls=""){
@@ -348,11 +360,11 @@ function showMsg(id,txt,t="ok"){const e=document.getElementById(id);if(!e)return
 
 // ── DATA ──
 let _data=null;
-const STORAGE_KEY="school_mgt_data";
+const STORAGE_KEY="school_mgt_data_ar";
 
 function loadData(){
   const saved=localStorage.getItem(STORAGE_KEY);
-  if(saved){_data=JSON.parse(saved);if(!_data.users.find(u=>u.email==="Admin@gmail.com"))_data.users.push({id:"USR04",email:"Admin@gmail.com",password:"123456",nome:"Admin",role:"admin",avatar:"A"});if(_data.subjects&&_data.subjects[0]&&_data.subjects[0].name==="Mathematics"){const subMap={Mathematics:"الرياضيات",Arabic:"اللغة العربية",English:"اللغة الإنجليزية",Science:"العلوم",Physics:"الفيزياء",French:"اللغة الفرنسية","Computer Science":"علوم الحاسوب","Islamic Studies":"التربية الإسلامية","History & Geography":"التاريخ والجغرافيا"};_data.subjects.forEach(s=>{if(subMap[s.name])s.name=subMap[s.name];});}if(_data.classes&&_data.classes[0]&&_data.classes[0].name==="7th Grade"){const clsMap={"7th Grade":"الصف السابع","8th Grade":"الصف الثامن","9th Grade":"الصف التاسع"};_data.classes.forEach(c=>{if(clsMap[c.name])c.name=clsMap[c.name];});}saveData();return _data;}
+  if(saved){_data=JSON.parse(saved);if(!_data.users.find(u=>u.email==="Admin@gmail.com"))_data.users.push({id:"USR04",email:"Admin@gmail.com",password:"123456",nome:"Admin",role:"admin",avatar:"A"});if(_data.subjects&&_data.subjects[0]&&_data.subjects[0].name==="Mathematics"){const subMap={Mathematics:"الرياضيات",Arabic:"اللغة العربية",English:"اللغة الإنجليزية",Science:"العلوم",Physics:"الفيزياء",French:"اللغة الفرنسية","Computer Science":"علوم الحاسوب","Islamic Studies":"التربية الإسلامية","History & Geography":"التاريخ والجغرافيا"};_data.subjects.forEach(s=>{if(subMap[s.name])s.name=subMap[s.name];});}if(_data.classes&&_data.classes[0]&&_data.classes[0].name==="7th Grade"){const clsMap={"7th Grade":"الفصل الأول","8th Grade":"الفصل الثاني","9th Grade":"الفصل الثالث"};_data.classes.forEach(c=>{if(clsMap[c.name])c.name=clsMap[c.name];});}const oldClsMap={"الصف السابع":"الفصل الأول","الصف الثامن":"الفصل الثاني","الصف التاسع":"الفصل الثالث"};if(_data.classes&&_data.classes[0]&&oldClsMap[_data.classes[0].name]){_data.classes.forEach(c=>{if(oldClsMap[c.name])c.name=oldClsMap[c.name];});saveData()}saveData();return _data;}
   _data={
     students:[
       {id:"STU001",firstName:"Ahmed",lastName:"Benali",dob:"2008-05-12",gender:"M",email:"ahmed@school.com",phone:"0555123456",address:"15 Rue Didouche Mourad",classId:"CLS01",parentName:"Karim Benali",parentPhone:"0666123456",status:"active",enrollDate:"2024-09-01"},
@@ -361,19 +373,21 @@ function loadData(){
       {id:"STU004",firstName:"Sara",lastName:"Mansouri",dob:"2009-07-15",gender:"F",email:"sara@school.com",phone:"0555443322",address:"3 Rue Khemisti",classId:"CLS03",parentName:"Nadia Mansouri",parentPhone:"0666443322",status:"active",enrollDate:"2024-09-01"},
       {id:"STU005",firstName:"Youssef",lastName:"Bouaziz",dob:"2008-01-30",gender:"M",email:"youssef@school.com",phone:"0555778899",address:"12 Rue Emir Abdelkader",classId:"CLS02",parentName:"Hassan Bouaziz",parentPhone:"0666778899",status:"active",enrollDate:"2024-09-01"},
       {id:"STU006",firstName:"Leila",lastName:"Hadj",dob:"2010-09-18",gender:"F",email:"leila@school.com",phone:"0555665544",address:"7 Rue de la Liberté",classId:"CLS03",parentName:"Mounir Hadj",parentPhone:"0666665544",status:"active",enrollDate:"2024-09-01"},
-      {id:"STU007",firstName:"Omar",lastName:"Bensaid",dob:"2007-06-05",gender:"M",email:"omar@school.com",phone:"0555223344",address:"19 Rue Colonel Amirouche",classId:"CLS01",parentName:"Farida Bensaid",parentPhone:"0666223344",status:"active",enrollDate:"2023-09-01"},
-      {id:"STU008",firstName:"Nora",lastName:"Cherif",dob:"2009-12-25",gender:"F",email:"nora@school.com",phone:"0555889900",address:"5 Rue des Oliviers",classId:"CLS02",parentName:"Reda Cherif",parentPhone:"0666889900",status:"active",enrollDate:"2024-09-01"},
+      {id:"STU007",firstName:"Omar",lastName:"Bensaid",dob:"2007-06-05",gender:"M",email:"omar@school.com",phone:"0555223344",address:"19 Rue Colonel Amirouche",classId:"CLS04",parentName:"Farida Bensaid",parentPhone:"0666223344",status:"active",enrollDate:"2023-09-01"},
+      {id:"STU008",firstName:"Nora",lastName:"Cherif",dob:"2009-12-25",gender:"F",email:"nora@school.com",phone:"0555889900",address:"5 Rue des Oliviers",classId:"CLS05",parentName:"Reda Cherif",parentPhone:"0666889900",status:"active",enrollDate:"2024-09-01"},
     ],
     teachers:[
       {id:"TCH01",firstName:"Khadija",lastName:"Makhlouf",dob:"1985-04-10",gender:"F",email:"khadija@school.com",phone:"0666123123",address:"12 Rue Didouche",subjects:["الرياضيات","الفيزياء"],classIds:["CLS01","CLS02"],qualification:"دكتوراه في الرياضيات",hireDate:"2020-09-01",status:"active"},
       {id:"TCH02",firstName:"Redouane",lastName:"Amrani",dob:"1980-11-22",gender:"M",email:"redouane@school.com",phone:"0666456789",address:"8 Rue Larbi Tebessi",subjects:["اللغة العربية","التربية الإسلامية"],classIds:["CLS01","CLS03"],qualification:"ماجستير الأدب العربي",hireDate:"2019-09-01",status:"active"},
       {id:"TCH03",firstName:"Samira",lastName:"Belaid",dob:"1990-02-14",gender:"F",email:"samira@school.com",phone:"0666789456",address:"22 Ave Benbadis",subjects:["اللغة الإنجليزية","اللغة الفرنسية"],classIds:["CLS02","CLS03"],qualification:"ماجستير اللغات",hireDate:"2021-09-01",status:"active"},
-      {id:"TCH04",firstName:"Karim",lastName:"Nouri",dob:"1982-07-08",gender:"M",email:"karim@school.com",phone:"0666345678",address:"3 Rue Emir Abdelkader",subjects:["العلوم","علوم الحاسوب"],classIds:["CLS01","CLS02","CLS03"],qualification:"دكتوراه في العلوم",hireDate:"2020-09-01",status:"active"},
+      {id:"TCH04",firstName:"Karim",lastName:"Nouri",dob:"1982-07-08",gender:"M",email:"karim@school.com",phone:"0666345678",address:"3 Rue Emir Abdelkader",subjects:["العلوم","علوم الحاسوب"],classIds:["CLS01","CLS02","CLS03","CLS04","CLS05"],qualification:"دكتوراه في العلوم",hireDate:"2020-09-01",status:"active"},
     ],
     classes:[
-      {id:"CLS01",name:"الصف السابع",section:"A",room:"101",teacherId:"TCH01",capacity:30,students:3},
-      {id:"CLS02",name:"الصف الثامن",section:"B",room:"102",teacherId:"TCH02",capacity:30,students:3},
-      {id:"CLS03",name:"الصف التاسع",section:"A",room:"103",teacherId:"TCH03",capacity:25,students:2},
+      {id:"CLS01",name:"الفصل الأول",section:"A",room:"101",teacherId:"TCH01",capacity:30,students:2},
+      {id:"CLS02",name:"الفصل الثاني",section:"B",room:"102",teacherId:"TCH02",capacity:30,students:2},
+      {id:"CLS03",name:"الفصل الثالث",section:"A",room:"103",teacherId:"TCH03",capacity:25,students:2},
+      {id:"CLS04",name:"الفصل الرابع",section:"A",room:"104",teacherId:"TCH04",capacity:30,students:1},
+      {id:"CLS05",name:"الفصل الخامس",section:"B",room:"105",teacherId:"TCH04",capacity:25,students:1},
     ],
     subjects:[
       {id:"SUB01",name:"الرياضيات",code:"ريض",teacherId:"TCH01",hours:5},
@@ -404,15 +418,15 @@ function loadData(){
     ],
     attendance:[
       {id:"ATT01",studentId:"STU001",date:"2026-05-04",status:"حاضر",teacherId:"TCH01"},
-      {id:"ATT02",studentId:"STU002",date:"2026-05-04",status:"Present",teacherId:"TCH01"},
-      {id:"ATT03",studentId:"STU003",date:"2026-05-04",status:"Late",teacherId:"TCH01"},
-      {id:"ATT04",studentId:"STU004",date:"2026-05-04",status:"Present",teacherId:"TCH01"},
+      {id:"ATT02",studentId:"STU002",date:"2026-05-04",status:"حاضر",teacherId:"TCH01"},
+      {id:"ATT03",studentId:"STU003",date:"2026-05-04",status:"متأخر",teacherId:"TCH01"},
+      {id:"ATT04",studentId:"STU004",date:"2026-05-04",status:"حاضر",teacherId:"TCH01"},
       {id:"ATT05",studentId:"STU005",date:"2026-05-04",status:"غائب",teacherId:"TCH01"},
-      {id:"ATT06",studentId:"STU001",date:"2026-05-05",status:"Present",teacherId:"TCH03"},
-      {id:"ATT07",studentId:"STU002",date:"2026-05-05",status:"Present",teacherId:"TCH03"},
-      {id:"ATT08",studentId:"STU003",date:"2026-05-05",status:"Present",teacherId:"TCH03"},
-      {id:"ATT09",studentId:"STU004",date:"2026-05-05",status:"Absent",teacherId:"TCH03"},
-      {id:"ATT10",studentId:"STU005",date:"2026-05-05",status:"Late",teacherId:"TCH03"},
+      {id:"ATT06",studentId:"STU001",date:"2026-05-05",status:"حاضر",teacherId:"TCH03"},
+      {id:"ATT07",studentId:"STU002",date:"2026-05-05",status:"حاضر",teacherId:"TCH03"},
+      {id:"ATT08",studentId:"STU003",date:"2026-05-05",status:"حاضر",teacherId:"TCH03"},
+      {id:"ATT09",studentId:"STU004",date:"2026-05-05",status:"غائب",teacherId:"TCH03"},
+      {id:"ATT10",studentId:"STU005",date:"2026-05-05",status:"متأخر",teacherId:"TCH03"},
     ],
     schedule:[
       {id:"SCH01",classId:"CLS01",day:"Sunday",subjectId:"SUB01",teacherId:"TCH01",startTime:"08:00",endTime:"09:00",room:"101"},
@@ -430,6 +444,10 @@ function loadData(){
       {id:"SCH13",classId:"CLS03",day:"Sunday",subjectId:"SUB04",teacherId:"TCH04",startTime:"08:00",endTime:"09:00",room:"103"},
       {id:"SCH14",classId:"CLS03",day:"Monday",subjectId:"SUB02",teacherId:"TCH02",startTime:"10:00",endTime:"11:00",room:"103"},
       {id:"SCH15",classId:"CLS03",day:"Tuesday",subjectId:"SUB03",teacherId:"TCH03",startTime:"09:00",endTime:"10:00",room:"103"},
+      {id:"SCH16",classId:"CLS04",day:"Sunday",subjectId:"SUB04",teacherId:"TCH04",startTime:"10:00",endTime:"11:00",room:"104"},
+      {id:"SCH17",classId:"CLS04",day:"Monday",subjectId:"SUB01",teacherId:"TCH01",startTime:"08:00",endTime:"09:00",room:"104"},
+      {id:"SCH18",classId:"CLS05",day:"Tuesday",subjectId:"SUB04",teacherId:"TCH04",startTime:"10:00",endTime:"11:00",room:"105"},
+      {id:"SCH19",classId:"CLS05",day:"Wednesday",subjectId:"SUB03",teacherId:"TCH03",startTime:"08:00",endTime:"09:00",room:"105"},
     ],
     users:[
       {id:"USR01",email:"admin@school.com",password:"admin123",nome:"Admin",role:"admin",avatar:"A"},
@@ -444,7 +462,8 @@ function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(_data))}
 
 // ── STATE ──
 let CU=null;let CR=null;let _curView="dashboard";
-const DIAS_SEMANA=["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"];
+const DIAS_SEMANA=["Sunday","Monday","Tuesday","Wednesday","Thursday"];
+const dayAr={"Sunday":"الأحد","Monday":"الإثنين","Tuesday":"الثلاثاء","Wednesday":"الأربعاء","Thursday":"الخميس"};
 
 // ── LOGIN ──
 function renderLogin(err){
@@ -552,8 +571,8 @@ function renderShell(){
   sw("dashboard");
 }
 window.doLogout=function(){localStorage.removeItem("scl_user");CU=null;CR=null;location.reload()};
-window.toggleSidebar=function(){const s=document.querySelector(".sidebar");const o=document.getElementById("sbOverlay");if(!s)return;s.classList.toggle("open");if(o)o.classList.toggle("show")};
-window.closeSidebar=function(){const s=document.querySelector(".sidebar");const o=document.getElementById("sbOverlay");if(s)s.classList.remove("open");if(o)o.classList.remove("show")};
+window.toggleSidebar=function(){const s=document.querySelector(".sidebar");const o=document.getElementById("sbOverlay");const h=document.getElementById("hmbr");if(!s)return;if(window.innerWidth<=768){s.classList.toggle("open");if(o)o.classList.toggle("show")}else{s.classList.toggle("collapsed");if(h)h.classList.toggle("sb-closed")}};
+window.closeSidebar=function(){const s=document.querySelector(".sidebar");const o=document.getElementById("sbOverlay");if(s)s.classList.remove("open");if(o)o.classList.remove("show");const h=document.getElementById("hmbr");if(window.innerWidth>768&&s&&s.classList.contains("collapsed")){s.classList.remove("collapsed");if(h)h.classList.remove("sb-closed")}};
 
 window.sw=function(view){
   _curView=view;
@@ -576,7 +595,7 @@ window.sw=function(view){
 function vDashboard(){
   loadData();const a=_data,u=a.users.find(x=>x.email===CU.email);
   const isAdmin=u.role==="admin",isTeacher=u.role==="teacher",isStudent=u.role==="student";
-  document.getElementById("ttl").textContent="Dashboard";
+  document.getElementById("ttl").textContent="لوحة التحكم";
   document.getElementById("tact").innerHTML="";
 
   if(isStudent){
@@ -584,9 +603,9 @@ function vDashboard(){
     const myG=a.grades.filter(g=>g.studentId===student.id);
     const avg=myG.length?myG.reduce((s,g)=>{const t=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return s+t},0)/myG.length:0;
     const myAtt=a.attendance.filter(at=>at.studentId===student.id);
-    const pres=myAtt.filter(at=>at.status==="Present").length;
-    const late=myAtt.filter(at=>at.status==="Late").length;
-    const abs=myAtt.filter(at=>at.status==="Absent").length;
+    const pres=myAtt.filter(at=>at.status==="حاضر"||at.status==="Present").length;
+    const late=myAtt.filter(at=>at.status==="متأخر"||at.status==="Late").length;
+    const abs=myAtt.filter(at=>at.status==="غائب"||at.status==="Absent").length;
     document.getElementById("tsub").textContent=student.firstName+" "+student.lastName+" · "+student.classId;
     document.getElementById("mc").innerHTML=`
     <div class="stats-row">
@@ -596,7 +615,7 @@ function vDashboard(){
       <div class="stat-card red"><div class="stat-val">${abs}</div><div class="stat-label">غائب</div></div>
     </div>
     <div class="card" style="margin-bottom:1rem">
-      <div class="sec-t">📊 My Grades</div>
+      <div class="sec-t">📊 درجاتي</div>
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>المادة</th><th>الفصل الأول</th><th>الفصل الثاني</th><th>الامتحان</th><th>المعدل</th><th>الحالة</th></tr></thead>
         <tbody>${myG.map(g=>{const sub=a.subjects.find(s=>s.id===g.subjectId);const avg2=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
@@ -625,7 +644,7 @@ function vDashboard(){
       <div class="stat-card purple"><div class="stat-val">${myAtt.length}</div><div class="stat-label">الحضور</div></div>
     </div>
     <div class="card">
-      <div class="sec-t">📋 My Classes</div>
+      <div class="sec-t">📋 فصولي</div>
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>الفصل</th><th>القاعة</th><th>الطلاب</th><th>المواد</th><th>الإجراءات</th></tr></thead>
         <tbody>${myClasses.map(c=>`<tr>
@@ -633,7 +652,7 @@ function vDashboard(){
           <td>قاعة ${c.room}</td>
           <td>${a.students.filter(s=>s.classId===c.id).length}</td>
           <td>${t.subjects.join(", ")}</td>
-          <td><button class="btn btn-b" style="font-size:.68rem;padding:.2rem .5rem" onclick="sw('my_students')">View</button></td>
+          <td><button class="btn btn-b" style="font-size:.68rem;padding:.2rem .5rem" onclick="sw('my_students')">عرض</button></td>
         </tr>`).join("")}
       </tbody></table></div>
     </div>`;
@@ -651,8 +670,8 @@ function vDashboard(){
   <div class="stats-row">
     <div class="stat-card green"><div class="stat-val">${totalStu}</div><div class="stat-label">إجمالي الطلاب</div><div class="stat-sub">${activeStu} نشط</div></div>
     <div class="stat-card blue"><div class="stat-val">${totalTch}</div><div class="stat-label">المعلمين</div></div>
-    <div class="stat-card amber"><div class="stat-val">${totalCls}</div><div class="stat-label">Classes</div></div>
-    <div class="stat-card purple"><div class="stat-val">${totalSub}</div><div class="stat-label">Subjects</div></div>
+    <div class="stat-card amber"><div class="stat-val">${totalCls}</div><div class="stat-label">الفصول</div></div>
+    <div class="stat-card purple"><div class="stat-val">${totalSub}</div><div class="stat-label">المواد</div></div>
   </div>
   <div class="stats-row">
     <div class="stat-card green"><div class="stat-val">${totalG}</div><div class="stat-label">الدرجات المسجلة</div></div>
@@ -664,7 +683,7 @@ function vDashboard(){
     <div class="card">
       <div class="sec-t">📋 آخر الدرجات</div>
       <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>الطالب</th><th>Subject</th><th>المعدل</th><th>Status</th></tr></thead>
+        <thead><tr><th>الطالب</th><th>المادة</th><th>المعدل</th><th>الحالة</th></tr></thead>
         <tbody>${recentG.map(g=>{const stu=a.students.find(s=>s.id===g.studentId);const sub=a.subjects.find(s=>s.id===g.subjectId);const avg2=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
           <td>${stu?stu.firstName+" "+stu.lastName:"—"}</td>
           <td>${sub?sub.name:"—"}</td>
@@ -676,10 +695,10 @@ function vDashboard(){
     <div class="card">
       <div class="sec-t">🏫 وصول سريع</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.5rem">
-        <button class="btn btn-p" onclick="sw('students')" style="padding:.6rem">👨‍🎓 Students</button>
-        <button class="btn btn-b" onclick="sw('teachers')" style="padding:.6rem">👨‍🏫 Teachers</button>
-        <button class="btn btn-g" onclick="sw('attendance')" style="padding:.6rem">✅ Attendance</button>
-        <button class="btn btn-s" onclick="sw('grades')" style="padding:.6rem">📝 Grades</button>
+        <button class="btn btn-p" onclick="sw('students')" style="padding:.6rem">👨‍🎓 الطلاب</button>
+        <button class="btn btn-b" onclick="sw('teachers')" style="padding:.6rem">👨‍🏫 المعلمين</button>
+        <button class="btn btn-g" onclick="sw('attendance')" style="padding:.6rem">✅ الحضور</button>
+        <button class="btn btn-s" onclick="sw('grades')" style="padding:.6rem">📝 الدرجات</button>
       </div>
     </div>
   </div>`;
@@ -691,7 +710,7 @@ function vDashboard(){
 function vStudents(){
   loadData();document.getElementById("ttl").textContent="إدارة الطلاب";
   document.getElementById("tsub").textContent=_data.students.length+ " إجمالي الطلاب";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirStu()">+ Add Student</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirStu()">+ إضافة طالب</button>`;
   renderStuTbl();
 }
 function renderStuTbl(){
@@ -710,7 +729,7 @@ window.filtStu=function(){
   const f=_data.students.filter(s=>(!q||s.firstName.toLowerCase().includes(q)||s.lastName.toLowerCase().includes(q)||s.email.toLowerCase().includes(q)||s.phone.includes(q))&&(!cl||_data.classes.find(c=>c.id===s.classId)?.name===cl)&&(!st||s.status===st));
   const el=document.getElementById("stuTbl");if(!el)return;
   el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>المعرف</th><th>الاسم</th><th>الجنس</th><th>Class</th><th>البريد</th><th>الهاتف</th><th>ولي الأمر</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th>المعرف</th><th>الاسم</th><th>الجنس</th><th>الفصل</th><th>البريد</th><th>الهاتف</th><th>ولي الأمر</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
     <tbody>${f.map(s=>`<tr>
       <td style="color:var(--text3)">${s.id}</td>
       <td><strong>${s.firstName} ${s.lastName}</strong></td>
@@ -719,8 +738,8 @@ window.filtStu=function(){
       <td style="font-size:.7rem">${s.email}</td>
       <td>${s.phone||"—"}</td>
       <td style="font-size:.7rem">${s.parentName||"—"}</td>
-      <td><span class="pill ${s.status==="active"?"pill-green":"pill-red"}">${s.status}</span></td>
-      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirStu('${s.id}')">✏️ Edit</button>
+      <td><span class="pill ${s.status==="active"?"pill-green":"pill-red"}">${s.status==="active"?"نشط":"غير نشط"}</span></td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirStu('${s.id}')">✏️ تعديل</button>
         <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delStu('${s.id}')">🗑️</button></td>
     </tr>`).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لم يتم العثور على طلاب</div>`;
 };
@@ -738,8 +757,8 @@ window.abrirStu=function(id){
       <div class="fg"><label>الفصل *</label><select id="sCl">${_data.classes.map(c=>`<option value="${c.id}" ${isEdit&&s.classId===c.id?"selected":""}>${c.name}</option>`).join("")}</select></div>
     </div>
     <div class="fg-2">
-      <div class="fg"><label>Email</label><input type="email" id="sE" value="${isEdit?s.email:""}"/></div>
-      <div class="fg"><label>Phone</label><input type="tel" id="sP" value="${isEdit?s.phone:""}"/></div>
+      <div class="fg"><label>البريد الإلكتروني</label><input type="email" id="sE" value="${isEdit?s.email:""}"/></div>
+      <div class="fg"><label>الهاتف</label><input type="tel" id="sP" value="${isEdit?s.phone:""}"/></div>
     </div>
     <div class="fg-2">
       <div class="fg"><label>اسم ولي الأمر</label><input type="text" id="sPN" value="${isEdit?s.parentName:""}"/></div>
@@ -748,12 +767,12 @@ window.abrirStu=function(id){
     <div class="fg"><label>العنوان</label><input type="text" id="sA" value="${isEdit?s.address:""}"/></div>
     <div class="fg-2">
       <div class="fg"><label>تاريخ الميلاد</label><input type="date" id="sD" value="${isEdit?s.dob:""}"/></div>
-      <div class="fg"><label>الحالة</label><select id="sSt"><option value="active" ${isEdit&&s.status==="active"?"selected":""}>Active</option><option value="inactive" ${isEdit&&s.status==="inactive"?"selected":""}>Inactive</option></select></div>
+      <div class="fg"><label>الحالة</label><select id="sSt"><option value="active" ${isEdit&&s.status==="active"?"selected":""}>نشط</option><option value="inactive" ${isEdit&&s.status==="inactive"?"selected":""}>غير نشط</option></select></div>
     </div>
     <div id="sMsg" class="fmsg" style="display:none"></div>
   </div>
   <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
-    <button class="btn btn-p" onclick="salvarStu('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+    <button class="btn btn-p" onclick="salvarStu('${id||""}')">${isEdit?"حفظ":"إضافة"}</button></div>`,"modal-sm");
 };
 window.salvarStu=function(id){
   const fn=gv("sfN"),ln=gv("slN"),g=gv("sG"),cl=gv("sCl");
@@ -771,7 +790,7 @@ window.delStu=function(id){if(!confirm("حذف الطالب؟"))return;_data.stu
 function vTeachers(){
   loadData();document.getElementById("ttl").textContent="إدارة المعلمين";
   document.getElementById("tsub").textContent=_data.teachers.length+ " معلم";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirTch()">+ Add Teacher</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirTch()">+ إضافة معلم</button>`;
   renderTchTbl();
 }
 function renderTchTbl(){
@@ -779,17 +798,17 @@ function renderTchTbl(){
   el.innerHTML=`<div id="tchTbl"></div>`;
   const f=_data.teachers;
   document.getElementById("tchTbl").innerHTML=`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>ID</th><th>Name</th><th>Gender</th><th>Subjects</th><th>Classes</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th>المعرف</th><th>الاسم</th><th>الجنس</th><th>المواد</th><th>الفصول</th><th>البريد</th><th>الهاتف</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
     <tbody>${f.map(t=>`<tr>
       <td style="color:var(--text3)">${t.id}</td>
       <td><strong>${t.firstName} ${t.lastName}</strong></td>
-      <td>${t.gender==="M"?"Male":"Female"}</td>
+      <td>${t.gender==="M"?"ذكر":"أنثى"}</td>
       <td>${t.subjects.map(s=>`<span class="hotel-badge">${s}</span>`).join(" ")}</td>
       <td>${t.classIds.map(c=>{const cl=_data.classes.find(x=>x.id===c);return cl?'<span class="pill pill-blue">'+cl.name+'</span>':""}).join(" ")}</td>
       <td style="font-size:.7rem">${t.email}</td>
       <td>${t.phone||"—"}</td>
-      <td><span class="pill ${t.status==="active"?"pill-green":"pill-red"}">${t.status}</span></td>
-      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirTch('${t.id}')">✏️ Edit</button>
+      <td><span class="pill ${t.status==="active"?"pill-green":"pill-red"}">${t.status==="active"?"نشط":"غير نشط"}</span></td>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirTch('${t.id}')">✏️ تعديل</button>
         <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delTch('${t.id}')">🗑️</button></td>
     </tr>`).join("")}</tbody></table></div>`;
 };
@@ -798,24 +817,24 @@ window.abrirTch=function(id){
   showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} معلم</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
     <div class="fg-2">
-      <div class="fg"><label>First Name *</label><input type="text" id="tfN" value="${isEdit?t.firstName:""}"/></div>
-      <div class="fg"><label>Last Name *</label><input type="text" id="tlN" value="${isEdit?t.lastName:""}"/></div>
+      <div class="fg"><label>الاسم الأول *</label><input type="text" id="tfN" value="${isEdit?t.firstName:""}"/></div>
+      <div class="fg"><label>اسم العائلة *</label><input type="text" id="tlN" value="${isEdit?t.lastName:""}"/></div>
     </div>
     <div class="fg-2">
-      <div class="fg"><label>Gender *</label><select id="tG"><option value="M" ${isEdit&&t.gender==="M"?"selected":""}>Male</option><option value="F" ${isEdit&&t.gender==="F"?"selected":""}>Female</option></select></div>
-      <div class="fg"><label>Email</label><input type="email" id="tE" value="${isEdit?t.email:""}"/></div>
+      <div class="fg"><label>الجنس *</label><select id="tG"><option value="M" ${isEdit&&t.gender==="M"?"selected":""}>ذكر</option><option value="F" ${isEdit&&t.gender==="F"?"selected":""}>أنثى</option></select></div>
+      <div class="fg"><label>البريد الإلكتروني</label><input type="email" id="tE" value="${isEdit?t.email:""}"/></div>
     </div>
     <div class="fg-2">
-      <div class="fg"><label>Phone</label><input type="tel" id="tP" value="${isEdit?t.phone:""}"/></div>
+      <div class="fg"><label>الهاتف</label><input type="tel" id="tP" value="${isEdit?t.phone:""}"/></div>
       <div class="fg"><label>المؤهل</label><input type="text" id="tQ" value="${isEdit?t.qualification:""}"/></div>
     </div>
-    <div class="fg"><label>المواد (مفصولة بفواصل)</label><input type="text" id="tSub" value="${isEdit?t.subjects.join(", "):""}" placeholder="e.g. Mathematics, Physics"/></div>
+    <div class="fg"><label>المواد (مفصولة بفواصل)</label><input type="text" id="tSub" value="${isEdit?t.subjects.join(", "):""}" placeholder="مثال: الرياضيات, الفيزياء"/></div>
     <div class="fg"><label>الفصول المخصصة</label><div style="display:flex;flex-wrap:wrap;gap:.35rem">${_data.classes.map(c=>`<label style="display:flex;align-items:center;gap:.3rem;font-size:.75rem;cursor:pointer"><input type="checkbox" value="${c.id}" ${isEdit&&t.classIds.includes(c.id)?"checked":""} onchange="togTchCls(this)"/>${c.name}</label>`).join("")}</div></div>
-    <div class="fg"><label>الحالة</label><select id="tSt"><option value="active" ${isEdit&&t.status==="active"?"selected":""}>Active</option><option value="inactive" ${isEdit&&t.status==="inactive"?"selected":""}>Inactive</option></select></div>
+    <div class="fg"><label>الحالة</label><select id="tSt"><option value="active" ${isEdit&&t.status==="active"?"selected":""}>نشط</option><option value="inactive" ${isEdit&&t.status==="inactive"?"selected":""}>غير نشط</option></select></div>
     <div id="tMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-p" onclick="salvarTch('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarTch('${id||""}')">${isEdit?"حفظ":"إضافة"}</button></div>`,"modal-sm");
 };
 window.togTchCls=function(cb){};
 window.salvarTch=function(id){
@@ -835,23 +854,23 @@ window.delTch=function(id){if(!confirm("حذف المعلم؟"))return;_data.tea
 function vClasses(){
   loadData();document.getElementById("ttl").textContent="إدارة الفصول";
   document.getElementById("tsub").textContent=_data.classes.length+ " فصل";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirCls()">+ Add Class</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirCls()">+ إضافة فصل</button>`;
   renderClsTbl();
 }
 function renderClsTbl(){
   const el=document.getElementById("mc");const f=_data.classes;
   el.innerHTML=`<div id="clsTbl"></div>`;
   document.getElementById("clsTbl").innerHTML=`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>ID</th><th>Name</th><th>Section</th><th>Room</th><th>Homeroom Teacher</th><th>السعة</th><th>Students</th><th>Actions</th></tr></thead>
+    <thead><tr><th>المعرف</th><th>الاسم</th><th>القسم</th><th>القاعة</th><th>معلم الفصل</th><th>السعة</th><th>الطلاب</th><th>الإجراءات</th></tr></thead>
     <tbody>${f.map(c=>{const t=_data.teachers.find(tc=>tc.id===c.teacherId);const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<tr>
       <td style="color:var(--text3)">${c.id}</td>
       <td><strong>${c.name}</strong></td>
       <td>${c.section}</td>
-      <td>Room ${c.room}</td>
+      <td>قاعة ${c.room}</td>
       <td>${t?t.firstName+" "+t.lastName:"—"}</td>
       <td>${c.capacity}</td>
       <td><span class="pill ${cnt>=c.capacity?"pill-red":"pill-green"}">${cnt}</span></td>
-      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirCls('${c.id}')">✏️ Edit</button>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirCls('${c.id}')">✏️ تعديل</button>
         <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delCls('${c.id}')">🗑️</button></td>
     </tr>`}).join("")}</tbody></table></div>`;
 }
@@ -860,18 +879,18 @@ window.abrirCls=function(id){
   showModal(`<div class="modal-head"><h2>${isEdit?"تعديل":"إضافة"} فصل</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
     <div class="fg-2">
-      <div class="fg"><label>اسم الفصل *</label><input type="text" id="cN" value="${isEdit?c.name:""}" placeholder="e.g. 7th Grade"/></div>
-      <div class="fg"><label>القسم</label><input type="text" id="cS" value="${isEdit?c.section:""}" placeholder="e.g. A"/></div>
+      <div class="fg"><label>اسم الفصل *</label><input type="text" id="cN" value="${isEdit?c.name:""}" placeholder="مثال: الفصل الأول"/></div>
+      <div class="fg"><label>القسم</label><input type="text" id="cS" value="${isEdit?c.section:""}" placeholder="مثال: A"/></div>
     </div>
     <div class="fg-2">
-      <div class="fg"><label>القاعة</label><input type="text" id="cR" value="${isEdit?c.room:""}" placeholder="e.g. 101"/></div>
+      <div class="fg"><label>القاعة</label><input type="text" id="cR" value="${isEdit?c.room:""}" placeholder="مثال: 101"/></div>
       <div class="fg"><label>السعة</label><input type="number" id="cCap" value="${isEdit?c.capacity:30}"/></div>
     </div>
     <div class="fg"><label>معلم الفصل</label><select id="cT"><option value="">—</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}" ${isEdit&&c.teacherId===t.id?"selected":""}>${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
     <div id="cMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-p" onclick="salvarCls('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarCls('${id||""}')">${isEdit?"حفظ":"إضافة"}</button></div>`,"modal-sm");
 };
 window.salvarCls=function(id){
   const n=gv("cN");if(!n){showMsg("cMsg","اسم الفصل مطلوب","err");return}
@@ -888,16 +907,16 @@ window.delCls=function(id){if(!confirm("حذف الفصل؟"))return;_data.class
 function vSubjects(){
   loadData();document.getElementById("ttl").textContent="المواد";
   document.getElementById("tsub").textContent=_data.subjects.length+ " مادة";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirSub()">+ Add Subject</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirSub()">+ إضافة مادة</button>`;
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>الرمز</th><th>Name</th><th>المعلم</th><th>ساعات/أسبوع</th><th>Actions</th></tr></thead>
+    <thead><tr><th>الرمز</th><th>الاسم</th><th>المعلم</th><th>ساعات/أسبوع</th><th>الإجراءات</th></tr></thead>
     <tbody>${_data.subjects.map(s=>{const t=_data.teachers.find(tc=>tc.id===s.teacherId);return`<tr>
       <td><span class="pill pill-blue">${s.code}</span></td>
       <td><strong>${s.name}</strong></td>
       <td>${t?t.firstName+" "+t.lastName:"—"}</td>
       <td>${s.hours}h</td>
-      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirSub('${s.id}')">✏️ Edit</button>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirSub('${s.id}')">✏️ تعديل</button>
         <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delSub('${s.id}')">🗑️</button></td>
     </tr>`}).join("")}</tbody></table></div>`;
 }
@@ -907,7 +926,7 @@ window.abrirSub=function(id){
   <div class="modal-body">
     <div class="fg-2">
       <div class="fg"><label>اسم المادة *</label><input type="text" id="sbN" value="${isEdit?s.name:""}"/></div>
-      <div class="fg"><label>الرمز</label><input type="text" id="sbC" value="${isEdit?s.code:""}" placeholder="e.g. MATH"/></div>
+      <div class="fg"><label>الرمز</label><input type="text" id="sbC" value="${isEdit?s.code:""}" placeholder="مثال: MATH"/></div>
     </div>
     <div class="fg-2">
       <div class="fg"><label>المعلم</label><select id="sbT"><option value="">—</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}" ${isEdit&&s.teacherId===t.id?"selected":""}>${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
@@ -915,8 +934,8 @@ window.abrirSub=function(id){
     </div>
     <div id="sbMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-p" onclick="salvarSub('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarSub('${id||""}')">${isEdit?"حفظ":"إضافة"}</button></div>`,"modal-sm");
 };
 window.salvarSub=function(id){
   const n=gv("sbN");if(!n){showMsg("sbMsg","اسم المادة مطلوب","err");return}
@@ -933,13 +952,13 @@ window.delSub=function(id){if(!confirm("حذف المادة؟"))return;_data.sub
 function vGrades(){
   loadData();document.getElementById("ttl").textContent="إدارة الدرجات";
   document.getElementById("tsub").textContent=_data.grades.length+ " سجل درجة";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirGrd()">+ Add Grade</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirGrd()">+ إضافة درجة</button>`;
   renderGrdTbl();
 }
 function renderGrdTbl(){
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="filters">
-    <div class="fg-f grow"><label>Search</label><input id="gSearch" placeholder="🔍 بحث عن طالب..." oninput="filtGrd()"/></div>
+    <div class="fg-f grow"><label>بحث</label><input id="gSearch" placeholder="🔍 بحث عن طالب..." oninput="filtGrd()"/></div>
     <div class="fg-f"><label>المادة</label><select id="gSub" onchange="filtGrd()"><option value="">الكل</option>${_data.subjects.map(s=>`<option>${s.name}</option>`).join("")}</select></div>
     <div class="fg-f"><label>الفصل</label><select id="gCls" onchange="filtGrd()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div>
   </div>
@@ -951,7 +970,7 @@ window.filtGrd=function(){
   const f=_data.grades.filter(g=>{const s=_data.students.find(x=>x.id===g.studentId);const sb=_data.subjects.find(x=>x.id===g.subjectId);return(!q||(s?.firstName?.toLowerCase().includes(q)||s?.lastName?.toLowerCase().includes(q)))&&(!sub||sb?.name===sub)&&(!cl||!s||_data.classes.find(c=>c.id===s.classId)?.name===cl);});
   const el=document.getElementById("grdTbl");if(!el)return;
   el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Student</th><th>Subject</th><th>1st Term</th><th>2nd Term</th><th>Exam</th><th>Average</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th>الطالب</th><th>المادة</th><th>الفصل الأول</th><th>الفصل الثاني</th><th>الامتحان</th><th>المعدل</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
     <tbody>${f.map(g=>{const s=_data.students.find(x=>x.id===g.studentId);const sb=_data.subjects.find(x=>x.id===g.subjectId);const avg=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
       <td><strong>${s?s.firstName+" "+s.lastName:"—"}</strong></td>
       <td><span class="hotel-badge">${sb?sb.name:"—"}</span></td>
@@ -960,7 +979,7 @@ window.filtGrd=function(){
       <td><span class="pill ${gradePill(avg)}">${gradeLabel(avg)}</span></td>
       <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirGrd('${g.id}')">✏️</button>
         <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delGrd('${g.id}')">🗑️</button></td>
-    </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">No grades found.</div>`;
+    </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لم يتم العثور على درجات.</div>`;
 };
 window.abrirGrd=function(id){
   const g=id?_data.grades.find(x=>x.id===id):null;const isEdit=!!g;
@@ -978,8 +997,8 @@ window.abrirGrd=function(id){
     <div class="fg"><label>تعليق</label><textarea id="gC" rows="2">${isEdit?g.comment||"":""}</textarea></div>
     <div id="gMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-p" onclick="salvarGrd('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarGrd('${id||""}')">${isEdit?"حفظ":"إضافة"}</button></div>`,"modal-sm");
 };
 window.salvarGrd=function(id){
   const stu=gv("gStu"),sub=gv("gSubj");if(!stu||!sub){showMsg("gMsg","الطالب والمادة مطلوبان","err");return}
@@ -996,12 +1015,12 @@ window.delGrd=function(id){if(!confirm("حذف الدرجة؟"))return;_data.gra
 function vAttendance(){
   loadData();document.getElementById("ttl").textContent="سجلات الحضور";
   document.getElementById("tsub").textContent=_data.attendance.length+ " سجل";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirAtt()">+ Record Attendance</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirAtt()">+ تسجيل الحضور</button>`;
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="filters">
     <div class="fg-f"><label>التاريخ</label><input type="date" id="attDate" value="${hoje()}" onchange="filtAtt()"/></div>
     <div class="fg-f"><label>الفصل</label><select id="attCls" onchange="filtAtt()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div>
-    <div class="fg-f"><label>الحالة</label><select id="attSt" onchange="filtAtt()"><option value="">الكل</option><option value="Present">حاضر</option><option value="Late">متأخر</option><option value="Absent">غائب</option></select></div>
+    <div class="fg-f"><label>الحالة</label><select id="attSt" onchange="filtAtt()"><option value="">الكل</option><option value="حاضر">حاضر</option><option value="متأخر">متأخر</option><option value="غائب">غائب</option></select></div>
   </div>
   <div id="attTbl"></div>`;
   filtAtt();
@@ -1011,7 +1030,7 @@ window.filtAtt=function(){
   const f=_data.attendance.filter(a=>{const s=_data.students.find(x=>x.id===a.studentId);return(!dt||a.date===dt)&&(!cl||!s||_data.classes.find(c=>c.id===s.classId)?.name===cl)&&(!st||a.status===st);});
   const el=document.getElementById("attTbl");if(!el)return;
   el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th>التاريخ</th><th>الطالب</th><th>الفصل</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
     <tbody>${f.map(a=>{const s=_data.students.find(x=>x.id===a.studentId);return`<tr>
       <td>${isoDate(a.date)}</td>
       <td><strong>${s?s.firstName+" "+s.lastName:"—"}</strong></td>
@@ -1021,36 +1040,36 @@ window.filtAtt=function(){
     </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لم يتم العثور على سجلات</div>`;
 };
 window.abrirAtt=function(){
-  showModal(`<div class="modal-head"><h2>Record Attendance</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  showModal(`<div class="modal-head"><h2>تسجيل الحضور</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
-    <div class="fg"><label>Date *</label><input type="date" id="aDate" value="${hoje()}"/></div>
-    <div class="fg"><label>Class *</label><select id="aCls" onchange="loadAttStu()"><option value="">اختر الفصل</option>${_data.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
+    <div class="fg"><label>التاريخ *</label><input type="date" id="aDate" value="${hoje()}"/></div>
+    <div class="fg"><label>الفصل *</label><select id="aCls" onchange="loadAttStu()"><option value="">اختر الفصل</option>${_data.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
     <div id="attStuList"></div>
     <div id="aMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-p" onclick="salvarAtt()">Save All</button></div>`,"modal-lg");
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarAtt()">حفظ الكل</button></div>`,"modal-lg");
 };
 window.loadAttStu=function(){
   const cl=gv("aCls");const el=document.getElementById("attStuList");if(!cl||!el){el.innerHTML="";return}
   const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
-  el.innerHTML=`<div class="sec-t" style="margin-top:.5rem">Students</div>`+sts.map(s=>`<div class="toggle-row"><div class="toggle-info">${s.firstName} ${s.lastName}</div>
+  el.innerHTML=`<div class="sec-t" style="margin-top:.5rem">الطلاب</div>`+sts.map(s=>`<div class="toggle-row"><div class="toggle-info">${s.firstName} ${s.lastName}</div>
     <select id="ast_${s.id}" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:.25rem .5rem;font-size:.75rem">
-      <option value="Present">✅ حاضر</option><option value="Late">⏳ متأخر</option><option value="Absent">❌ غائب</option>
+      <option value="حاضر">✅ حاضر</option><option value="متأخر">⏳ متأخر</option><option value="غائب">❌ غائب</option>
     </select></div>`).join("");
 };
 window.salvarAtt=function(){
   const dt=gv("aDate"),cl=gv("aCls");if(!dt||!cl){showMsg("aMsg","التاريخ والفصل مطلوبان","err");return}
   const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
   if(!sts.length){showMsg("aMsg","لا يوجد طلاب في هذا الفصل","err");return}
-  sts.forEach(s=>{const st=document.getElementById("ast_"+s.id)?.value||"Present";
-    if(!_data.attendance.find(a=>a.studentId===s.id&&a.date===dt)){
-      _data.attendance.push({id:genId(),studentId:s.id,date:dt,status:st,teacherId:"TCH01"});
-    }
+  const tId=_data.classes.find(c=>c.id===cl)?.teacherId||"TCH01";
+  sts.forEach(s=>{const st=document.getElementById("ast_"+s.id)?.value||"حاضر";
+    const ex=_data.attendance.find(a=>a.studentId===s.id&&a.date===dt);
+    if(ex){ex.status=st;ex.teacherId=tId}else _data.attendance.push({id:genId(),studentId:s.id,date:dt,status:st,teacherId:tId});
   });
   saveData();showMsg("aMsg","✅ تم حفظ الحضور!","ok");setTimeout(closeModal,800);
 };
-window.delAtt=function(id){_data.attendance=_data.attendance.filter(a=>a.id!==id);saveData();filtAtt()};
+window.delAtt=function(id){if(!confirm("حذف السجل؟"))return;_data.attendance=_data.attendance.filter(a=>a.id!==id);saveData();filtAtt()};
 
 // ══════════════════════════════════════
 //  SCHEDULE (Admin)
@@ -1058,7 +1077,7 @@ window.delAtt=function(id){_data.attendance=_data.attendance.filter(a=>a.id!==id
 function vSchedule(){
   loadData();document.getElementById("ttl").textContent="الجدول الدراسي";
   document.getElementById("tsub").textContent=_data.schedule.length+ " حصة";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirSch()">+ Add Slot</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirSch()">+ إضافة حصة</button>`;
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="filters"><div class="fg-f"><label>الفصل</label><select id="schCls" onchange="renderSch()"><option value="">الكل</option>${_data.classes.map(c=>`<option>${c.name}</option>`).join("")}</select></div></div><div id="schTbl"></div>`;
   renderSch();
@@ -1067,36 +1086,36 @@ function renderSch(){
   const cl=gv("schCls")||"";const el=document.getElementById("schTbl");if(!el)return;
   const f=_data.schedule.filter(s=>!cl||_data.classes.find(c=>c.id===s.classId)?.name===cl);
   el.innerHTML=f.length?`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>اليوم</th><th>الوقت</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Room</th><th>Actions</th></tr></thead>
+    <thead><tr><th>اليوم</th><th>الوقت</th><th>الفصل</th><th>المادة</th><th>المعلم</th><th>القاعة</th><th>الإجراءات</th></tr></thead>
     <tbody>${f.map(s=>{const c=_data.classes.find(x=>x.id===s.classId);const sb=_data.subjects.find(x=>x.id===s.subjectId);const t=_data.teachers.find(x=>x.id===s.teacherId);return`<tr>
-      <td><span class="pill pill-blue">${s.day}</span></td>
+      <td><span class="pill pill-blue">${dayAr[s.day]||s.day}</span></td>
       <td>${s.startTime} - ${s.endTime}</td>
       <td><strong>${c?c.name:"—"}</strong></td>
       <td><span class="hotel-badge">${sb?sb.name:"—"}</span></td>
       <td>${t?t.firstName+" "+t.lastName:"—"}</td>
-      <td>Room ${s.room}</td>
+      <td>قاعة ${s.room}</td>
       <td><button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delSch('${s.id}')">🗑️</button></td>
     </tr>`}).join("")}</tbody></table></div>`:`<div style="padding:2rem;text-align:center;color:var(--text3)">لا توجد حصص جدولية</div>`;
 }
 window.abrirSch=function(){
-  showModal(`<div class="modal-head"><h2>Add Schedule Slot</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+  showModal(`<div class="modal-head"><h2>إضافة حصة جدولية</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
   <div class="modal-body">
     <div class="fg-2">
-      <div class="fg"><label>Day *</label><select id="schDay">${DIAS_SEMANA.map(d=>`<option>${d}</option>`).join("")}</select></div>
+      <div class="fg"><label>اليوم *</label><select id="schDay">${DIAS_SEMANA.map(d=>`<option value="${d}">${dayAr[d]}</option>`).join("")}</select></div>
       <div class="fg"><label>الفصل *</label><select id="schCl">${_data.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
     </div>
     <div class="fg-2">
       <div class="fg"><label>المادة *</label><select id="schSub">${_data.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join("")}</select></div>
-      <div class="fg"><label>المعلم</label><select id="schTch"><option value="">Auto</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
+      <div class="fg"><label>المعلم</label><select id="schTch"><option value="">تلقائي</option>${_data.teachers.filter(t=>t.status==="active").map(t=>`<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join("")}</select></div>
     </div>
     <div class="fg-2">
-      <div class="fg"><label>Start Time</label><input type="time" id="schST" value="08:00"/></div>
-      <div class="fg"><label>End Time</label><input type="time" id="schET" value="09:00"/></div>
+      <div class="fg"><label>وقت البداية</label><input type="time" id="schST" value="08:00"/></div>
+      <div class="fg"><label>وقت النهاية</label><input type="time" id="schET" value="09:00"/></div>
     </div>
-    <div class="fg"><label>Room</label><input type="text" id="schR" value=""/></div>
+    <div class="fg"><label>القاعة</label><input type="text" id="schR" value=""/></div>
     <div id="schMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
     <button class="btn btn-p" onclick="salvarSch()">إضافة</button></div>`,"modal-sm");
 };
 window.salvarSch=function(){
@@ -1106,7 +1125,7 @@ window.salvarSch=function(){
   _data.schedule.push({id:genId(),classId:cl,day,subjectId:sub,teacherId:tch,startTime:gv("schST")||"08:00",endTime:gv("schET")||"09:00",room:gv("schR")||"101"});
   saveData();closeModal();renderSch();
 };
-window.delSch=function(id){_data.schedule=_data.schedule.filter(s=>s.id!==id);saveData();renderSch()};
+window.delSch=function(id){if(!confirm("حذف الحصة؟"))return;_data.schedule=_data.schedule.filter(s=>s.id!==id);saveData();renderSch()};
 
 // ══════════════════════════════════════
 //  USERS (Admin)
@@ -1114,16 +1133,16 @@ window.delSch=function(id){_data.schedule=_data.schedule.filter(s=>s.id!==id);sa
 function vUsers(){
   loadData();document.getElementById("ttl").textContent="حسابات المستخدمين";
   document.getElementById("tsub").textContent=_data.users.length+ " مستخدم";
-  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirUsr()">+ Add User</button>`;
+  document.getElementById("tact").innerHTML=`<button class="btn btn-p" onclick="abrirUsr()">+ إضافة مستخدم</button>`;
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Name</th><th>Email</th><th>الدور</th><th>كلمة المرور</th><th>Actions</th></tr></thead>
+    <thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>كلمة المرور</th><th>الإجراءات</th></tr></thead>
     <tbody>${_data.users.map(u=>`<tr>
       <td><strong>${u.nome}</strong></td>
       <td>${u.email}</td>
-      <td><span class="pill ${u.role==="admin"?"pill-green":u.role==="teacher"?"pill-amber":"pill-blue"}">${u.role}</span></td>
+      <td><span class="pill ${u.role==="admin"?"pill-green":u.role==="teacher"?"pill-amber":"pill-blue"}">${u.role==="admin"?"مدير":u.role==="teacher"?"معلم":"طالب"}</span></td>
       <td style="font-family:monospace;color:var(--text3)">${u.password}</td>
-      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirUsr('${u.id}')">✏️ Edit</button>
+      <td><button class="btn btn-s" style="font-size:.68rem;padding:.2rem .5rem" onclick="abrirUsr('${u.id}')">✏️ تعديل</button>
         <button class="btn btn-r" style="font-size:.68rem;padding:.2rem .5rem" onclick="delUsr('${u.id}')">🗑️</button></td>
     </tr>`).join("")}</tbody></table></div>`;
 }
@@ -1135,12 +1154,12 @@ window.abrirUsr=function(id){
     <div class="fg"><label>البريد الإلكتروني *</label><input type="email" id="uE" value="${isEdit?u.email:""}"/></div>
     <div class="fg-2">
       <div class="fg"><label>كلمة المرور *</label><input type="text" id="uP" value="${isEdit?u.password:""}"/></div>
-      <div class="fg"><label>الدور *</label><select id="uR"><option value="admin" ${isEdit&&u.role==="admin"?"selected":""}>Admin</option><option value="teacher" ${isEdit&&u.role==="teacher"?"selected":""}>Teacher</option><option value="student" ${isEdit&&u.role==="student"?"selected":""}>Student</option></select></div>
+      <div class="fg"><label>الدور *</label><select id="uR"><option value="admin" ${isEdit&&u.role==="admin"?"selected":""}>مدير</option><option value="teacher" ${isEdit&&u.role==="teacher"?"selected":""}>معلم</option><option value="student" ${isEdit&&u.role==="student"?"selected":""}>طالب</option></select></div>
     </div>
     <div id="uMsg" class="fmsg" style="display:none"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-p" onclick="salvarUsr('${id||""}')">${isEdit?"Save":"Add"}</button></div>`,"modal-sm");
+  <div class="modal-footer"><button class="btn btn-s" onclick="closeModal()">إلغاء</button>
+    <button class="btn btn-p" onclick="salvarUsr('${id||""}')">${isEdit?"حفظ":"إضافة"}</button></div>`,"modal-sm");
 };
 window.salvarUsr=function(id){
   const n=gv("uN"),e=gv("uE"),p=gv("uP"),r=gv("uR");if(!n||!e||!p){showMsg("uMsg","الاسم والبريد الإلكتروني وكلمة المرور مطلوبون","err");return}
@@ -1161,10 +1180,10 @@ function vMyClasses(){
   document.getElementById("tact").innerHTML="";
   const myC=_data.classes.filter(c=>t.classIds.includes(c.id));
   const el=document.getElementById("mc");
-  el.innerHTML=`<div class="stats-row">${myC.map(c=>{const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<div class="stat-card green" style="cursor:pointer" onclick="sw('my_students')"><div class="stat-val">${c.name} ${c.section}</div><div class="stat-label">Room ${c.room}</div><div class="stat-sub">${cnt} students</div></div>`}).join("")}</div>
-  <div class="card"><div class="sec-t">📋 Class Details</div><div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Class</th><th>Room</th><th>Capacity</th><th>Students</th><th>متاح</th></tr></thead>
-    <tbody>${myC.map(c=>{const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<tr><td><strong>${c.name} ${c.section}</strong></td><td>Room ${c.room}</td><td>${c.capacity}</td><td>${cnt}</td><td><span class="pill ${c.capacity-cnt>0?"pill-green":"pill-red"}">${c.capacity-cnt}</span></td></tr>`}).join("")}</tbody></table></div></div>`;
+  el.innerHTML=`<div class="stats-row">${myC.map(c=>{const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<div class="stat-card green" style="cursor:pointer" onclick="sw('my_students')"><div class="stat-val">${c.name} ${c.section}</div><div class="stat-label">قاعة ${c.room}</div><div class="stat-sub">${cnt} طالب</div></div>`}).join("")}</div>
+  <div class="card"><div class="sec-t">📋 تفاصيل الفصل</div><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>الفصل</th><th>القاعة</th><th>السعة</th><th>الطلاب</th><th>متاح</th></tr></thead>
+    <tbody>${myC.map(c=>{const cnt=_data.students.filter(s=>s.classId===c.id).length;return`<tr><td><strong>${c.name} ${c.section}</strong></td><td>قاعة ${c.room}</td><td>${c.capacity}</td><td>${cnt}</td><td><span class="pill ${c.capacity-cnt>0?"pill-green":"pill-red"}">${c.capacity-cnt}</span></td></tr>`}).join("")}</tbody></table></div></div>`;
 }
 function vMyStudents(){
   loadData();document.getElementById("ttl").textContent="طلابي";
@@ -1174,15 +1193,15 @@ function vMyStudents(){
   const myS=_data.students.filter(s=>t.classIds.includes(s.classId));
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="stats-row">
-    <div class="stat-card green"><div class="stat-val">${myS.length}</div><div class="stat-label">Total Students</div></div>
-    <div class="stat-card blue"><div class="stat-val">${myS.filter(s=>s.status==="active").length}</div><div class="stat-label">Active</div></div>
+    <div class="stat-card green"><div class="stat-val">${myS.length}</div><div class="stat-label">إجمالي الطلاب</div></div>
+    <div class="stat-card blue"><div class="stat-val">${myS.filter(s=>s.status==="active").length}</div><div class="stat-label">نشط</div></div>
   </div>
   <div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Name</th><th>Class</th><th>Gender</th><th>Email</th><th>Phone</th><th>Parent</th></tr></thead>
+    <thead><tr><th>الاسم</th><th>الفصل</th><th>الجنس</th><th>البريد</th><th>الهاتف</th><th>ولي الأمر</th></tr></thead>
     <tbody>${myS.map(s=>`<tr>
       <td><strong>${s.firstName} ${s.lastName}</strong></td>
       <td><span class="hotel-badge">${_data.classes.find(c=>c.id===s.classId)?.name||"—"}</span></td>
-      <td>${s.gender==="M"?"Male":"Female"}</td>
+      <td>${s.gender==="M"?"ذكر":"أنثى"}</td>
       <td style="font-size:.7rem">${s.email}</td>
       <td>${s.phone||"—"}</td>
       <td>${s.parentName||"—"}</td>
@@ -1207,7 +1226,7 @@ function vGradeMgt(){
     const f=myS.filter(s=>!cls||s.classId===cls);
     const el2=document.getElementById("gradeMgtTbl");if(!el2)return;
     el2.innerHTML=`<div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>Student</th><th>Class</th>${mySubs.map(s=>`<th>${s.name}</th>`).join("")}</tr></thead>
+      <thead><tr><th>الطالب</th><th>الفصل</th>${mySubs.map(s=>`<th>${s.name}</th>`).join("")}</tr></thead>
       <tbody>${f.map(s=>`<tr>
         <td><strong>${s.firstName} ${s.lastName}</strong></td>
         <td><span class="hotel-badge">${_data.classes.find(c=>c.id===s.classId)?.name||"—"}</span></td>
@@ -1222,30 +1241,30 @@ function vTakeAttendance(){
   document.getElementById("tact").innerHTML="";
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="card" style="max-width:500px">
-    <div class="fg"><label>Class *</label><select id="taCls" onchange="loadTaStu()">${t.classIds.map(cid=>{const c=_data.classes.find(x=>x.id===cid);return c?`<option value="${c.id}">${c.name}</option>`:""}).join("")}</select></div>
-    <div class="fg"><label>Date *</label><input type="date" id="taDate" value="${hoje()}"/></div>
+    <div class="fg"><label>الفصل *</label><select id="taCls" onchange="loadTaStu()">${t.classIds.map(cid=>{const c=_data.classes.find(x=>x.id===cid);return c?`<option value="${c.id}">${c.name}</option>`:""}).join("")}</select></div>
+    <div class="fg"><label>التاريخ *</label><input type="date" id="taDate" value="${hoje()}"/></div>
     <div id="taStuList"></div>
     <div id="taMsg" class="fmsg" style="display:none"></div>
-    <button class="btn btn-p" style="width:100%;margin-top:.5rem" onclick="salvarTa()">✅ Save Attendance</button>
+    <button class="btn btn-p" style="width:100%;margin-top:.5rem" onclick="salvarTa()">✅ حفظ الحضور</button>
   </div>`;
 }
 window.loadTaStu=function(){
   const cl=gv("taCls");const el=document.getElementById("taStuList");if(!cl||!el){el.innerHTML="";return}
   const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
-  el.innerHTML=`<div class="sec-t" style="margin-top:.5rem">Students (${sts.length})</div>`+sts.map(s=>`<div class="toggle-row"><div class="toggle-info">${s.firstName} ${s.lastName}</div>
+  el.innerHTML=`<div class="sec-t" style="margin-top:.5rem">الطلاب (${sts.length})</div>`+sts.map(s=>`<div class="toggle-row"><div class="toggle-info">${s.firstName} ${s.lastName}</div>
     <select id="tas_${s.id}" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:.25rem .5rem;font-size:.75rem">
-      <option value="Present">✅ Present</option><option value="Late">⏳ Late</option><option value="Absent">❌ Absent</option>
+      <option value="حاضر">✅ حاضر</option><option value="متأخر">⏳ متأخر</option><option value="غائب">❌ غائب</option>
     </select></div>`).join("");
 };
 window.salvarTa=function(){
-  const dt=gv("taDate"),cl=gv("taCls");if(!dt||!cl){showMsg("taMsg","Date and class required","err");return}
+  const dt=gv("taDate"),cl=gv("taCls");if(!dt||!cl){showMsg("taMsg","التاريخ والفصل مطلوبان","err");return}
   const t=(_data.teachers.find(tc=>tc.email===CU.email)||_data.teachers[0]);
   const sts=_data.students.filter(s=>s.classId===cl&&s.status==="active");
-  sts.forEach(s=>{const st=document.getElementById("tas_"+s.id)?.value||"Present";
+  sts.forEach(s=>{const st=document.getElementById("tas_"+s.id)?.value||"حاضر";
     const ex=_data.attendance.find(a=>a.studentId===s.id&&a.date===dt);
     if(ex)ex.status=st;else _data.attendance.push({id:genId(),studentId:s.id,date:dt,status:st,teacherId:t.id});
   });
-  saveData();showMsg("taMsg","✅ Attendance saved!","ok");
+  saveData();showMsg("taMsg","✅ تم حفظ الحضور!","ok");
 };
 
 // ══════════════════════════════════════
@@ -1260,12 +1279,12 @@ function vMyGrades(){
   const avg=myG.length?myG.reduce((sum,g)=>{const t=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return sum+t},0)/myG.length:0;
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="stats-row">
-    <div class="stat-card green"><div class="stat-val">${myG.length}</div><div class="stat-label">Subjects</div></div>
-    <div class="stat-card amber"><div class="stat-val">${avg.toFixed(1)}</div><div class="stat-label">Overall Average</div></div>
-    <div class="stat-card ${avg>=7?"green":avg>=5?"amber":"red"}"><div class="stat-val">${avg>=7?"✅ ممتاز":avg>=5?"📖 جيد":"📚 بحاجة عمل"}</div><div class="stat-label">Status</div></div>
+    <div class="stat-card green"><div class="stat-val">${myG.length}</div><div class="stat-label">المواد</div></div>
+    <div class="stat-card amber"><div class="stat-val">${avg.toFixed(1)}</div><div class="stat-label">المعدل العام</div></div>
+    <div class="stat-card ${avg>=7?"green":avg>=5?"amber":"red"}"><div class="stat-val">${avg>=7?"✅ ممتاز":avg>=5?"📖 جيد":"📚 بحاجة عمل"}</div><div class="stat-label">الحالة</div></div>
   </div>
   <div class="card"><div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Subject</th><th>Code</th><th>1st Term</th><th>2nd Term</th><th>Exam</th><th>Average</th><th>Status</th></tr></thead>
+    <thead><tr><th>المادة</th><th>الرمز</th><th>الفصل الأول</th><th>الفصل الثاني</th><th>الامتحان</th><th>المعدل</th><th>الحالة</th></tr></thead>
     <tbody>${myG.map(g=>{const sub=_data.subjects.find(x=>x.id===g.subjectId);const avg2=((g.firstTerm||0)+(g.secondTerm||0)+(g.majorExam||0))/3;return`<tr>
       <td><strong>${sub?sub.name:"—"}</strong></td>
       <td><span class="pill pill-blue">${sub?sub.code:"—"}</span></td>
@@ -1275,21 +1294,21 @@ function vMyGrades(){
     </tr>`}).join("")}</tbody></table></div></div>`;
 }
 function vMySchedule(){
-  loadData();document.getElementById("ttl").textContent="My Schedule";
+  loadData();  document.getElementById("ttl").textContent="جدولي";
   const s=_data.students.find(st=>st.email===CU.email)||_data.students[0];
   document.getElementById("tsub").textContent=s?s.firstName+" "+s.lastName:"";
   document.getElementById("tact").innerHTML="";
   const mySch=_data.schedule.filter(sc=>sc.classId===s.classId);
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="card">${DIAS_SEMANA.map(day=>{const slots=mySch.filter(sc=>sc.day===day).sort((a,b)=>a.startTime.localeCompare(b.startTime));return slots.length?`
-    <div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:.85rem;color:var(--accent);margin-bottom:.3rem">${day}</div>
+    <div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:.85rem;color:var(--accent);margin-bottom:.3rem">${dayAr[day]||day}</div>
     ${slots.map(sl=>{const sb=_data.subjects.find(x=>x.id===sl.subjectId);const t=_data.teachers.find(x=>x.id===sl.teacherId);return`<div style="display:flex;align-items:center;gap:.6rem;padding:.35rem .6rem;background:var(--bg3);border-radius:5px;margin-bottom:.25rem;font-size:.78rem">
       <span style="color:var(--text3);font-family:monospace;font-size:.7rem">${sl.startTime}</span>
       <span style="flex:1"><strong>${sb?sb.name:"—"}</strong></span>
       <span style="color:var(--text3);font-size:.7rem">${t?t.firstName+" "+t.lastName:""}</span>
-      <span class="hotel-badge">Room ${sl.room}</span>
+      <span class="hotel-badge">قاعة ${sl.room}</span>
     </div>`}).join("")}</div>`:""}).join("")}
-  ${mySch.length?"":"<div style='padding:1rem;text-align:center;color:var(--text3)'>No schedule available.</div>"}</div>`;
+  ${mySch.length?"":"<div style='padding:1rem;text-align:center;color:var(--text3)'>لا يوجد جدول متاح.</div>"}</div>`;
 }
 function vMyAttendance(){
   loadData();document.getElementById("ttl").textContent="حضوري";
@@ -1297,17 +1316,17 @@ function vMyAttendance(){
   document.getElementById("tsub").textContent=s?s.firstName+" "+s.lastName:"";
   document.getElementById("tact").innerHTML="";
   const myAtt=_data.attendance.filter(a=>a.studentId===s.id);
-  const pres=myAtt.filter(a=>a.status==="Present").length,late=myAtt.filter(a=>a.status==="Late").length,abs=myAtt.filter(a=>a.status==="Absent").length;
+  const pres=myAtt.filter(a=>a.status==="حاضر").length,late=myAtt.filter(a=>a.status==="متأخر").length,abs=myAtt.filter(a=>a.status==="غائب").length;
   const el=document.getElementById("mc");
   el.innerHTML=`<div class="stats-row">
-    <div class="stat-card green"><div class="stat-val">${pres}</div><div class="stat-label">Present</div></div>
-    <div class="stat-card amber"><div class="stat-val">${late}</div><div class="stat-label">Late</div></div>
-    <div class="stat-card red"><div class="stat-val">${abs}</div><div class="stat-label">Absent</div></div>
-    <div class="stat-card blue"><div class="stat-val">${myAtt.length?Math.round(pres/myAtt.length*100):0}%</div><div class="stat-label">Attendance Rate</div></div>
+    <div class="stat-card green"><div class="stat-val">${pres}</div><div class="stat-label">حاضر</div></div>
+    <div class="stat-card amber"><div class="stat-val">${late}</div><div class="stat-label">متأخر</div></div>
+    <div class="stat-card red"><div class="stat-val">${abs}</div><div class="stat-label">غائب</div></div>
+    <div class="stat-card blue"><div class="stat-val">${myAtt.length?Math.round(pres/myAtt.length*100):0}%</div><div class="stat-label">معدل الحضور</div></div>
   </div>
   <div class="card"><div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Date</th><th>Status</th></tr></thead>
-    <tbody>${myAtt.sort((a,b)=>b.date.localeCompare(a.date)).map(a=>`<tr><td>${isoDate(a.date)}</td><td><span class="pill ${attPill(a.status)}">${a.status}</span></td></tr>`).join("")}</tbody></table></div></div>`;
+    <thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead>
+    <tbody>${myAtt.sort((a,b)=>b.date.localeCompare(a.date)).map(a=>`<tr><td>${isoDate(a.date)}</td><td><span class="pill ${attPill(a.status)}">${attLabel(a.status)}</span></td></tr>`).join("")}</tbody></table></div></div>`;
 }
 
 // ══════════════════════════════════════
